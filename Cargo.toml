@@ -1,0 +1,19 @@
+[package]
+name = "webgl_test"
+version = "0.1.0"
+authors = ["z"]
+
+[dependencies]
+wasm-bindgen = { git = "https://github.com/rustwasm/wasm-bindgen.git" }
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = 3
+debug = true  # For wasm-bindgen
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = "abort"
