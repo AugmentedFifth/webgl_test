@@ -1,7 +1,6 @@
-/*
-const js = import("./webgl_test");
+const bindgen = import("./webgl_test");
 
-js.then(js => {
-    js.greet("World!");
-});
-*/
+bindgen.then(bg => {
+    bg.greet("world");
+})
+.catch(e => console.log(e));

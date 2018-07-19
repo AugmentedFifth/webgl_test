@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["z"]
 
 [dependencies]
-wasm-bindgen = { git = "https://github.com/rustwasm/wasm-bindgen.git" }
+wasm-bindgen = ">=0.2.12"
 
 [lib]
 crate-type = ["cdylib"]

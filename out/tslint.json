@@ -1,0 +1,35 @@
+{
+    "extends": "tslint:all",
+    "rulesDirectory": [],
+    "rules": {
+        "arrow-parens": false,
+        "max-line-length": [true, 79],
+        "typedef-whitespace": false,
+        "trailing-comma": false,
+        "variable-name": false,
+        "no-inferrable-types": [true, "ignore-params", "ignore-properties"],
+        "typedef": [
+            true,
+            "member-variable-declaration",
+            "call-signature",
+            "parameter",
+            "property-declaration"
+        ],
+        "no-magic-numbers": [true, -2, -1, 0, 1, 2, 3, 10],
+        "cyclomatic-complexity": false,
+        "no-bitwise": false,
+        "no-consecutive-blank-lines": false,
+        "interface-name": false,
+        "max-file-line-count": false,
+        "indent": [true, "spaces", 4],
+        "only-arrow-functions": [
+            true,
+            "allow-declarations",
+            "allow-named-functions"
+        ],
+        "no-duplicate-variable": [true, "check-parameters"],
+        "no-console": false,
+        "no-void-expression": [true, "ignore-arrow-function-shorthand"],
+        "no-unused-variable": false
+    }
+}

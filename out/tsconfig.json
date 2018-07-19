@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "esnext",
+            "dom",
+            "dom.iterable",
+            "scripthost"
+        ],
+        "module": "esnext",
+        "newLine": "LF",
+        "noEmitOnError": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": false,
+        "outDir": ".",
+        "pretty": true,
+        "strict": true,
+        "target": "esnext"
+    },
+    "files": ["index.ts"],
+    "include": ["./**/*.ts"]
+}

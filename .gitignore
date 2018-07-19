@@ -4,6 +4,6 @@ Cargo.lock
 
 *.d.ts
 *.wasm
+*.js
 package-lock.json
-webgl_test.js
 /out/node_modules
