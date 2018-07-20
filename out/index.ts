@@ -1,6 +1,10 @@
-const bindgen = import("./webgl_test");
+const webgl_test = import("./webgl_test");
 
-bindgen.then(bg => {
-    bg.greet("world");
+export function log(msg: string): void {
+    console.log(msg);
+}
+
+webgl_test.then(bg => {
+    bg.test0("world");
 })
-.catch(e => console.log(e));
+.catch(log);

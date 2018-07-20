@@ -30,6 +30,7 @@
         "no-duplicate-variable": [true, "check-parameters"],
         "no-console": false,
         "no-void-expression": [true, "ignore-arrow-function-shorthand"],
-        "no-unused-variable": false
+        "no-unused-variable": false,
+        "completed-docs": false
     }
 }

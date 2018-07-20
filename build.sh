@@ -10,7 +10,10 @@ wasm-bindgen                                                     \
     ./target/wasm32-unknown-unknown/release/"$PROJECT_NAME".wasm \
     --out-dir out
 cd out
-npm install
+if [ "$1" == "fresh" ]
+then
+    npm install
+fi
 tslint -p tsconfig.json
 tsc
 wasm-gc ./"$PROJECT_NAME"_bg.wasm
