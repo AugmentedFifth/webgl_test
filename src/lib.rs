@@ -47,5 +47,25 @@ void main() {
 
 #[wasm_bindgen]
 pub fn test0(name: &str) {
-    js::log(&format!("Hello, {}!", name));
+    log(&format!("Hello, {}!", name));
+
+    let vertex_shader =
+        create_shader(ShaderType::VertexShader, VERTEX_SHADER_SRC)
+            .expect("Failed to create vertex shader");
+    let fragment_shader =
+        create_shader(ShaderType::FragmentShader, FRAGMENT_SHADER_SRC)
+            .expect("Failed to create fragment shader");
+
+    let program = create_program(&vertex_shader, &fragment_shader)
+        .expect("Failed to link GLSL program");
+
+    let resolution_uni_loc = get_uniform_location(&program, "u_resolution")
+        .expect("There is no uniform with the name `u_resolution`");
+
+    let position_attr_loc = get_attr_location(&program, "a_position");
+    if position_attr_loc == -1 {
+        panic!("There is no attribute with the name `a_position`");
+    }
+    let position_buffer = create_buffer();
+    bind_buffer(BufferType::ArrayBuffer, &position_buffer);
 }

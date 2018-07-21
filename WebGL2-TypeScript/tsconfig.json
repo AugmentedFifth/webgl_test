@@ -12,6 +12,5 @@
         "strict": true,
         "target": "esnext"
     },
-    "files": ["index.ts"],
-    "include": ["./**/*.ts", "../WebGL2-TypeScript/**/*.d.ts"]
+    "files": ["Misc.d.ts", "WebGL2.d.ts"]
 }

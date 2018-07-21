@@ -2,8 +2,8 @@
 **/*.rs.bk
 Cargo.lock
 
-*.d.ts
 *.wasm
 *.js
 package-lock.json
+/out/*.d.ts
 /out/node_modules
