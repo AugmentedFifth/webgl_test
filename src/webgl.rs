@@ -110,18 +110,26 @@ extern "C" {
 
     /// Specifies the value of a uniform.
     pub fn uniform2f(loc: &WebGLUniformLocation, x: f32, y: f32);
+
+    /// Specifies the value of a uniform.
+    pub fn uniform4fv(loc: &WebGLUniformLocation, data: &[f32]);
+
+    /// Specifies the value of a uniform.
+    pub fn uniform_matrix4fv(loc: &WebGLUniformLocation, data: &[f32]);
 }
 
 pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
 pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
 pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum ShaderType {
     FragmentShader = 0x8B30,
     VertexShader = 0x8B31,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum BufferType {
     ArrayBuffer = 0x8892,
@@ -134,6 +142,7 @@ pub enum BufferType {
     CopyWriteBuffer = 0x8F37,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum UsageType {
     StreamDraw = 0x88E0,
@@ -147,6 +156,7 @@ pub enum UsageType {
     DynamicCopy = 0x88EA,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DataType {
     Byte = 0x1400,
@@ -158,6 +168,7 @@ pub enum DataType {
     Float = 0x1406,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum RenderingPrimitive {
     Points = 0x0000,

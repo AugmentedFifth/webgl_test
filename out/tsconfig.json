@@ -9,6 +9,7 @@
         "noUnusedLocals": false,
         "outDir": ".",
         "pretty": true,
+        "alwaysStrict": true,
         "strict": true,
         "target": "esnext"
     },

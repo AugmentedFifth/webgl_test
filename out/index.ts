@@ -1,3 +1,5 @@
+"use strict";
+
 const webgl_test = import("./webgl_test");
 
 //////// Globals     ////////
@@ -163,6 +165,16 @@ export function uniform2f(loc: WebGLUniformLocation,
     gl.uniform2f(loc, x, y);
 }
 
+export function uniform4fv(loc:  WebGLUniformLocation,
+                           data: Float32Array): void {
+    gl.uniform4fv(loc, data);
+}
+
+export function uniform_matrix4fv(loc:  WebGLUniformLocation,
+                                  data: Float32Array): void {
+    gl.uniformMatrix4fv(loc, false, data);
+}
+
 webgl_test.then(bg => {
     const canvas = document.getElementById("c");
     if (!(canvas instanceof HTMLCanvasElement)) {
@@ -178,4 +190,4 @@ webgl_test.then(bg => {
 
     bg.test0();
 })
-.catch(log);
+.catch(e => log(`Error resolving promise \`webgl_test\`: ${e}`));
