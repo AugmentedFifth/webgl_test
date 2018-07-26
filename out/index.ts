@@ -175,6 +175,10 @@ export function uniform_matrix4fv(loc:  WebGLUniformLocation,
     gl.uniformMatrix4fv(loc, false, data);
 }
 
+export function enable_sys(cap: number): void {
+    gl.enable(cap);
+}
+
 webgl_test.then(bg => {
     const canvas = document.getElementById("c");
     if (!(canvas instanceof HTMLCanvasElement)) {
@@ -188,6 +192,22 @@ webgl_test.then(bg => {
 
     gl = gl_ctx;
 
-    bg.test0();
+    const rot_x_input = document.getElementById("rot_x");
+    const rot_y_input = document.getElementById("rot_y");
+    const rot_z_input = document.getElementById("rot_z");
+    if (!(rot_x_input instanceof HTMLInputElement &&
+          rot_y_input instanceof HTMLInputElement &&
+          rot_z_input instanceof HTMLInputElement)) {
+        throw new Error("Missing controls");
+    }
+
+    const update = () =>
+        bg.test0(+rot_x_input.value, +rot_y_input.value, +rot_z_input.value);
+
+    update();
+
+    rot_x_input.addEventListener("input", update);
+    rot_y_input.addEventListener("input", update);
+    rot_z_input.addEventListener("input", update);
 })
 .catch(e => log(`Error resolving promise \`webgl_test\`: ${e}`));

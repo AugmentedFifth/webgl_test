@@ -116,6 +116,8 @@ extern "C" {
 
     /// Specifies the value of a uniform.
     pub fn uniform_matrix4fv(loc: &WebGLUniformLocation, data: &[f32]);
+
+    fn enable_sys(cap: u32);
 }
 
 pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
@@ -178,6 +180,21 @@ pub enum RenderingPrimitive {
     Triangles = 0x0004,
     TriangleStrip = 0x0005,
     TriangleFan = 0x0006,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum Capability {
+    CullFace = 0x0B44,
+    DepthTest = 0x0B71,
+    StencilTest = 0x0B90,
+    Dither = 0x0BD0,
+    Blend = 0x0BE2,
+    ScissorTest = 0x0C11,
+    PolygonOffsetFill = 0x8037,
+    SampleAlphaToCoverage = 0x809E,
+    SampleCoverage = 0x80A0,
+    RasterizerDiscard = 0x8C89,
 }
 
 /// Create a shader with the specified type using GLSL source code.
@@ -251,4 +268,9 @@ pub fn vertex_attr_ptr(
 /// Renders the specified primitive type using array data.
 pub fn draw_arrays(mode: RenderingPrimitive, first: i32, count: i32) {
     draw_arrays_sys(mode as u32, first, count);
+}
+
+/// Enable a WebGL capability.
+pub fn enable(capability: Capability) {
+    enable_sys(capability as u32);
 }
