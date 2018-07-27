@@ -85,7 +85,15 @@ export function buffer_data_sys(target:     number,
     gl.bufferData(target, src_data, usage, src_offset, length);
 }
 
-export function buffer_data_sys_f32(target:     number,
+export function buffer_data_u16_sys(target:     number,
+                                    src_data:   Uint16Array,
+                                    usage:      number,
+                                    src_offset: number,
+                                    length:     number): void {
+    gl.bufferData(target, src_data, usage, src_offset, length);
+}
+
+export function buffer_data_f32_sys(target:     number,
                                     src_data:   Float32Array,
                                     usage:      number,
                                     src_offset: number,
@@ -159,6 +167,13 @@ export function draw_arrays_sys(mode:  number,
     gl.drawArrays(mode, first, count);
 }
 
+export function draw_elements_sys(mode:      number,
+                                  count:     number,
+                                  data_type: number,
+                                  offset:    number): void {
+    gl.drawElements(mode, count, data_type, offset);
+}
+
 export function uniform2f(loc: WebGLUniformLocation,
                           x:   number,
                           y:   number): void {
@@ -210,4 +225,7 @@ webgl_test.then(bg => {
     rot_y_input.addEventListener("input", update);
     rot_z_input.addEventListener("input", update);
 })
-.catch(e => log(`Error resolving promise \`webgl_test\`: ${e}`));
+.catch(e => {
+    log(`Error resolving promise \`webgl_test\`: ${e}`);
+    console.log(e);
+});

@@ -54,7 +54,14 @@ extern "C" {
         src_offset: u32,
         length: u32,
     );
-    fn buffer_data_sys_f32(
+    fn buffer_data_u16_sys(
+        target: u32,
+        src_data: &[u16],
+        usage: u32,
+        src_offset: u32,
+        length: u32,
+    );
+    fn buffer_data_f32_sys(
         target: u32,
         src_data: &[f32],
         usage: u32,
@@ -83,9 +90,9 @@ extern "C" {
         offset: i32,
     );
 
-    pub fn get_canvas_width() -> u32;
+    pub fn get_canvas_width() -> f32;
 
-    pub fn get_canvas_height() -> u32;
+    pub fn get_canvas_height() -> f32;
 
     pub fn resize_canvas_to_display();
 
@@ -107,6 +114,8 @@ extern "C" {
     pub fn use_program(prog: &WebGLProgram);
 
     fn draw_arrays_sys(mode: u32, first: i32, count: i32);
+
+    fn draw_elements_sys(mode: u32, count: i32, data_type: u32, offset: i32);
 
     /// Specifies the value of a uniform.
     pub fn uniform2f(loc: &WebGLUniformLocation, x: f32, y: f32);
@@ -172,6 +181,14 @@ pub enum DataType {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
+pub enum ElementDataType {
+    UnsignedByte = 0x1401,
+    UnsignedShort = 0x1403,
+    UnsignedInt = 0x1405,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
 pub enum RenderingPrimitive {
     Points = 0x0000,
     Lines = 0x0001,
@@ -228,6 +245,23 @@ pub fn buffer_data(
 }
 
 /// Initializes the specified buffer object's data store.
+pub fn buffer_data_u16(
+    target: BufferType,
+    src_data: &[u16],
+    usage: UsageType,
+    src_offset: u32,
+    length: Option<u32>,
+) {
+    buffer_data_u16_sys(
+        target as u32,
+        src_data,
+        usage as u32,
+        src_offset,
+        length.unwrap_or(0),
+    );
+}
+
+/// Initializes the specified buffer object's data store.
 pub fn buffer_data_f32(
     target: BufferType,
     src_data: &[f32],
@@ -235,7 +269,7 @@ pub fn buffer_data_f32(
     src_offset: u32,
     length: Option<u32>,
 ) {
-    buffer_data_sys_f32(
+    buffer_data_f32_sys(
         target as u32,
         src_data,
         usage as u32,
@@ -268,6 +302,17 @@ pub fn vertex_attr_ptr(
 /// Renders the specified primitive type using array data.
 pub fn draw_arrays(mode: RenderingPrimitive, first: i32, count: i32) {
     draw_arrays_sys(mode as u32, first, count);
+}
+
+/// Renders the specified primitive type using array data. Used for index-based
+/// rendering.
+pub fn draw_elements(
+    mode: RenderingPrimitive,
+    count: i32,
+    data_type: ElementDataType,
+    offset: i32,
+) {
+    draw_elements_sys(mode as u32, count, data_type as u32, offset);
 }
 
 /// Enable a WebGL capability.
