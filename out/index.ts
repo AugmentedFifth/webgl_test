@@ -180,6 +180,11 @@ export function uniform2f(loc: WebGLUniformLocation,
     gl.uniform2f(loc, x, y);
 }
 
+export function uniform3fv(loc:  WebGLUniformLocation,
+                           data: Float32Array): void {
+    gl.uniform3fv(loc, data);
+}
+
 export function uniform4fv(loc:  WebGLUniformLocation,
                            data: Float32Array): void {
     gl.uniform4fv(loc, data);

@@ -6,16 +6,17 @@ use webgl;
 const VERTEX_SHADER_SRC: &str = r#"#version 300 es
 
 in vec4 a_position;
-in vec4 a_color;
+in vec3 a_normal;
 
-uniform mat4 u_matrix;
+uniform mat4 u_worldViewProjection;
+uniform mat4 u_world;
 
-out vec4 v_color;
+out vec3 v_normal;
 
 void main() {
-    gl_Position = u_matrix * a_position;
+    gl_Position = u_worldViewProjection * a_position;
 
-    v_color = a_color;
+    v_normal = mat3(u_world) * a_normal;
 }
 "#;
 
@@ -23,12 +24,21 @@ const FRAGMENT_SHADER_SRC: &str = r#"#version 300 es
 
 precision mediump float;
 
-in vec4 v_color;
+in vec3 v_normal;
+
+uniform vec3 u_reverseLightDirection;
+uniform vec4 u_color;
 
 out vec4 outColor;
 
 void main() {
-    outColor = v_color;
+    vec3 normal = normalize(v_normal);
+
+    float light = dot(normal, u_reverseLightDirection);
+
+    outColor = u_color;
+
+    outColor.rgb *= light;
 }
 "#;
 
@@ -46,53 +56,109 @@ pub fn test0(rot_x: f32, rot_y: f32, rot_z: f32) {
     let program = webgl::create_program(&vertex_shader, &fragment_shader)
         .expect("Failed to link GLSL program");
 
-    let matrix_uni_loc = webgl::get_uniform_location(&program, "u_matrix")
-        .expect("There is no uniform with the name \"u_matrix\"");
+    let world_view_proj_uni_loc =
+        webgl::get_uniform_location(&program, "u_worldViewProjection").expect(
+            "There is no uniform with the name \"u_worldViewProjection\"",
+        );
+    let world_uni_loc = webgl::get_uniform_location(&program, "u_world")
+        .expect("There is no uniform with the name \"u_world\"");
+    let color_uni_loc = webgl::get_uniform_location(&program, "u_color")
+        .expect("There is no uniform with the name \"u_color\"");
+    let reverse_light_dir_uni_loc = webgl::get_uniform_location(
+        &program,
+        "u_reverseLightDirection",
+    ).expect(
+        "There is no uniform with the name \"u_reverseLightDirection\"",
+    );
 
     let position_attr_loc = webgl::get_attr_location(&program, "a_position");
     if position_attr_loc < 0 {
         panic!("There is no attribute with the name \"a_position\"");
     }
     let position_attr_loc = position_attr_loc as u32;
-
-    let color_attr_loc = webgl::get_attr_location(&program, "a_color");
-    if color_attr_loc < 0 {
-        panic!("There is no attribute with the name \"a_color\"");
+    let normal_attr_loc = webgl::get_attr_location(&program, "a_normal");
+    if normal_attr_loc < 0 {
+        panic!("There is no attribute with the name \"a_normal\"");
     }
-    let color_attr_loc = color_attr_loc as u32;
+    let normal_attr_loc = normal_attr_loc as u32;
     ////////////////////////////////////////////////////////////////////////
 
     let prism_vert_buffer = webgl::create_buffer();
     webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &prism_vert_buffer);
     webgl::buffer_data_f32(
         webgl::BufferType::ArrayBuffer,
-        geometry::HEXAGONAL_PRISM_VERTS,
+        geometry::HEXAGONAL_PRISM,
         webgl::UsageType::StaticDraw,
         0,
         None,
     );
 
-    let prism_index_buffer = webgl::create_buffer();
-    webgl::bind_buffer(
-        webgl::BufferType::ElementArrayBuffer,
-        &prism_index_buffer,
-    );
-    webgl::buffer_data_u16(
-        webgl::BufferType::ElementArrayBuffer,
-        geometry::HEXAGONAL_PRISM_INDICES,
-        webgl::UsageType::StaticDraw,
-        0,
-        None,
-    );
-
-    let prism_color_buffer = webgl::create_buffer();
-    webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &prism_color_buffer);
-    webgl::buffer_data(
+    let prism_normal_buffer = webgl::create_buffer();
+    webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &prism_normal_buffer);
+    webgl::buffer_data_f32(
         webgl::BufferType::ArrayBuffer,
         &[
-            239, 167, 197, 239, 167, 197, 239, 167, 197, 239, 167, 197, 239,
-            167, 197, 239, 167, 197, 239, 167, 197, 3, 220, 221, 129, 173,
-            116, 82, 23, 1, 12, 113, 11, 169, 157, 128, 65, 114, 146,
+            // Hexagon
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            0.0, 0.0, 1.0, ////////////////////////////////////////////////////////////////
+            // Prism: first face, northeast
+            geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            // Prism: second face, north
+            0.0, 1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, 1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, 1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, 1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, 1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, 1.0, 0.0, ////////////////////////////////////////////////////////////////
+            // Prism: third face, northwest
+            -geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, 0.5, 0.0, ////////////////////////////////////////////////////////////////
+            // Prism: fourth face, southwest
+            -geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            -geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            // Prism: fifth face, south
+            0.0, -1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, -1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, -1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, -1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, -1.0, 0.0, ////////////////////////////////////////////////////////////////
+            0.0, -1.0, 0.0, ////////////////////////////////////////////////////////////////
+            // Prism: sixth face, southeast
+            geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
+            geometry::SQRT_3_ON_2, -0.5, 0.0, ////////////////////////////////////////////////////////////////
         ],
         webgl::UsageType::StaticDraw,
         0,
@@ -113,20 +179,15 @@ pub fn test0(rot_x: f32, rot_y: f32, rot_z: f32) {
         0,                      // Offset (in bytes)
     );
 
-    webgl::bind_buffer(
-        webgl::BufferType::ElementArrayBuffer,
-        &prism_index_buffer,
-    );
-
-    webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &prism_color_buffer);
-    webgl::enable_vertex_attr_array(color_attr_loc);
+    webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &prism_normal_buffer);
+    webgl::enable_vertex_attr_array(normal_attr_loc);
     webgl::vertex_attr_ptr(
-        color_attr_loc,
-        3,                             // Three components per iteration
-        webgl::DataType::UnsignedByte, // The data is `u8`s
-        true,                          // Normalize to [0.0, 1.0]
-        0,                             // Stride (in bytes)
-        0,                             // Offset (in bytes)
+        normal_attr_loc,
+        3,                      // Three components per iteration
+        webgl::DataType::Float, // The data is `f32`s
+        false,                  // Do not normalize
+        0,                      // Stride (in bytes)
+        0,                      // Offset (in bytes)
     );
     ////////////////////////////////////////////////////////////////////////
 
@@ -152,26 +213,39 @@ pub fn test0(rot_x: f32, rot_y: f32, rot_z: f32) {
 
     // Compute a transformation matrix:
     // scale, project, translate, rotate
-    let mut m = na::Matrix4::new_perspective(
+    let mut view = na::Matrix4::new_perspective(
         webgl::get_canvas_width() / webgl::get_canvas_height(),
         0.875,
         1.0,
         2000.0,
     );
-    m *= na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, -400.0));
-    m *= na::Matrix4::new_rotation(na::Vector3::new(rot_x, rot_y, rot_z));
-    m *= na::Matrix4::new_scaling(40.0);
+    view *= na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, -400.0));
+    let world =
+        na::Matrix4::new_rotation(na::Vector3::new(rot_x, rot_y, rot_z));
+    view *= world;
+    view *= na::Matrix4::new_scaling(40.0);
 
-    // Pass in the transformation matrix
-    webgl::uniform_matrix4fv(&matrix_uni_loc, m.as_slice());
+    // Pass in the world matrix
+    webgl::uniform_matrix4fv(&world_uni_loc, world.as_slice());
+
+    // Pass in the world view/projection matrix
+    webgl::uniform_matrix4fv(&world_view_proj_uni_loc, view.as_slice());
+
+    // Set the color
+    webgl::uniform4fv(&color_uni_loc, &[0.1725, 0.6902, 0.2157, 1.0]);
+
+    // Set the light direction
+    webgl::uniform3fv(
+        &reverse_light_dir_uni_loc,
+        na::Vector3::new(0.5, 0.7, 1.0).normalize().as_slice(),
+    );
     ////////////////////////////////////////////////////////////////////////
 
     // Draw!
-    webgl::draw_elements(
+    webgl::draw_arrays(
         webgl::RenderingPrimitive::Triangles,
-        geometry::HEXAGONAL_PRISM_INDICES.len() as i32,
-        webgl::ElementDataType::UnsignedShort,
         0,
+        geometry::HEXAGONAL_PRISM.len() as i32 / 3,
     );
     ////////////////////////////////////////////////////////////////////////
 }

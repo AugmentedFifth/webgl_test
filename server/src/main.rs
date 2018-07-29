@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
             //    fs::NamedFile::open("webgl_test_bg.wasm")
             //})
             .handler("/", fs::StaticFiles::new(".").unwrap())
-    }).bind("localhost:11484")?
+    }).bind("0.0.0.0:11484")?
         .run();
 
     Ok(())
