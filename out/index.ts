@@ -199,6 +199,14 @@ export function enable_sys(cap: number): void {
     gl.enable(cap);
 }
 
+export function get_seed(): Uint32Array {
+    const seed_len = 4;
+    const seed = new Uint32Array(seed_len);
+    window.crypto.getRandomValues(seed);
+
+    return seed;
+}
+
 webgl_test.then(bg => {
     const canvas = document.getElementById("c");
     if (!(canvas instanceof HTMLCanvasElement)) {
@@ -212,20 +220,53 @@ webgl_test.then(bg => {
 
     gl = gl_ctx;
 
+    bg.init();
+
+    const trans_x_input = document.getElementById("trans_x");
+    const trans_y_input = document.getElementById("trans_y");
+    const trans_z_input = document.getElementById("trans_z");
+
+    const lookat_eye_x_input = document.getElementById("lookat_eye_x");
+    const lookat_eye_y_input = document.getElementById("lookat_eye_y");
+    const lookat_eye_z_input = document.getElementById("lookat_eye_z");
+
     const rot_x_input = document.getElementById("rot_x");
     const rot_y_input = document.getElementById("rot_y");
     const rot_z_input = document.getElementById("rot_z");
-    if (!(rot_x_input instanceof HTMLInputElement &&
-          rot_y_input instanceof HTMLInputElement &&
-          rot_z_input instanceof HTMLInputElement)) {
+
+    if (!(trans_x_input      instanceof HTMLInputElement &&
+          trans_y_input      instanceof HTMLInputElement &&
+          trans_z_input      instanceof HTMLInputElement &&
+          lookat_eye_x_input instanceof HTMLInputElement &&
+          lookat_eye_y_input instanceof HTMLInputElement &&
+          lookat_eye_z_input instanceof HTMLInputElement &&
+          rot_x_input        instanceof HTMLInputElement &&
+          rot_y_input        instanceof HTMLInputElement &&
+          rot_z_input        instanceof HTMLInputElement)) {
         throw new Error("Missing controls");
     }
 
     const update = () =>
-        bg.test0(+rot_x_input.value, +rot_y_input.value, +rot_z_input.value);
+        bg.render(
+            +trans_x_input.value,
+            +trans_y_input.value,
+            +trans_z_input.value,
+            +lookat_eye_x_input.value,
+            +lookat_eye_y_input.value,
+            +lookat_eye_z_input.value,
+            +rot_x_input.value,
+            +rot_y_input.value,
+            +rot_z_input.value
+        );
 
     update();
 
+    trans_x_input.addEventListener("input", update);
+    trans_y_input.addEventListener("input", update);
+    trans_z_input.addEventListener("input", update);
+    lookat_eye_x_input.addEventListener("input", update);
+    lookat_eye_y_input.addEventListener("input", update);
+    lookat_eye_z_input.addEventListener("input", update);
     rot_x_input.addEventListener("input", update);
     rot_y_input.addEventListener("input", update);
     rot_z_input.addEventListener("input", update);

@@ -4,7 +4,10 @@ version = "0.1.0"
 authors = ["z"]
 
 [dependencies]
+lazy_static = ">=1.0.2"
 nalgebra = ">=0.16.0"
+pcg_rand = ">=0.8.0"
+rand = "^0.4.2"
 wasm-bindgen = ">=0.2.14"
 
 [lib]
@@ -14,7 +17,7 @@ crate-type = ["cdylib"]
 opt-level = 3
 debug = true  # For wasm-bindgen
 rpath = false
-lto = false  # For wasm-bindgen
+lto = "fat"
 debug-assertions = false
 codegen-units = 1
 panic = "abort"

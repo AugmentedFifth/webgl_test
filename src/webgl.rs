@@ -218,6 +218,7 @@ pub enum Capability {
 }
 
 /// Create a shader with the specified type using GLSL source code.
+#[inline]
 pub fn create_shader(
     shader_type: ShaderType,
     source: &str,
@@ -226,11 +227,13 @@ pub fn create_shader(
 }
 
 /// Binds a `WebGLBuffer` to a target buffer type.
+#[inline]
 pub fn bind_buffer(target: BufferType, buffer: &WebGLBuffer) {
     bind_buffer_sys(target as u32, buffer);
 }
 
 /// Initializes the specified buffer object's data store.
+#[inline]
 pub fn buffer_data(
     target: BufferType,
     src_data: &[u8],
@@ -248,6 +251,7 @@ pub fn buffer_data(
 }
 
 /// Initializes the specified buffer object's data store.
+#[inline]
 pub fn buffer_data_u16(
     target: BufferType,
     src_data: &[u16],
@@ -265,6 +269,7 @@ pub fn buffer_data_u16(
 }
 
 /// Initializes the specified buffer object's data store.
+#[inline]
 pub fn buffer_data_f32(
     target: BufferType,
     src_data: &[f32],
@@ -284,6 +289,7 @@ pub fn buffer_data_f32(
 /// Binds the buffer currently bound to `BufferType::ArrayBuffer` to a generic
 /// vertex attribute of the current vertex buffer object and specifies its
 /// layout.
+#[inline]
 pub fn vertex_attr_ptr(
     index: u32,
     size: i32,
@@ -303,12 +309,14 @@ pub fn vertex_attr_ptr(
 }
 
 /// Renders the specified primitive type using array data.
+#[inline]
 pub fn draw_arrays(mode: RenderingPrimitive, first: i32, count: i32) {
     draw_arrays_sys(mode as u32, first, count);
 }
 
 /// Renders the specified primitive type using array data. Used for index-based
 /// rendering.
+#[inline]
 pub fn draw_elements(
     mode: RenderingPrimitive,
     count: i32,
@@ -319,6 +327,7 @@ pub fn draw_elements(
 }
 
 /// Enable a WebGL capability.
+#[inline]
 pub fn enable(capability: Capability) {
     enable_sys(capability as u32);
 }
