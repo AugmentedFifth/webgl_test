@@ -118,10 +118,16 @@ extern "C" {
     fn draw_elements_sys(mode: u32, count: i32, data_type: u32, offset: i32);
 
     /// Specifies the value of a uniform.
+    pub fn uniform2ui(loc: &WebGLUniformLocation, x: u32, y: u32);
+
+    /// Specifies the value of a uniform.
     pub fn uniform2f(loc: &WebGLUniformLocation, x: f32, y: f32);
 
     /// Specifies the value of a uniform.
     pub fn uniform3fv(loc: &WebGLUniformLocation, data: &[f32]);
+
+    /// Specifies the value of a uniform.
+    pub fn uniform3f(loc: &WebGLUniformLocation, x: f32, y: f32, z: f32);
 
     /// Specifies the value of a uniform.
     pub fn uniform4fv(loc: &WebGLUniformLocation, data: &[f32]);

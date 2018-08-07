@@ -1,5 +1,9 @@
 "use strict";
 
+import * as recv_opcode from "./recv_opcode";
+import * as send_opcode from "./send_opcode";
+import { Uint16Vec } from "./vec";
+
 const webgl_test = import("./webgl_test");
 
 //////// Globals     ////////
@@ -174,6 +178,12 @@ export function draw_elements_sys(mode:      number,
     gl.drawElements(mode, count, data_type, offset);
 }
 
+export function uniform2ui(loc: WebGLUniformLocation,
+                           x:   number,
+                           y:   number): void {
+    gl.uniform2ui(loc, x, y);
+}
+
 export function uniform2f(loc: WebGLUniformLocation,
                           x:   number,
                           y:   number): void {
@@ -183,6 +193,13 @@ export function uniform2f(loc: WebGLUniformLocation,
 export function uniform3fv(loc:  WebGLUniformLocation,
                            data: Float32Array): void {
     gl.uniform3fv(loc, data);
+}
+
+export function uniform3f(loc: WebGLUniformLocation,
+                          x:   number,
+                          y:   number,
+                          z:   number): void {
+    gl.uniform3f(loc, x, y, z);
 }
 
 export function uniform4fv(loc:  WebGLUniformLocation,
@@ -200,14 +217,43 @@ export function enable_sys(cap: number): void {
 }
 
 export function get_seed(): Uint32Array {
-    const seed_len = 4;
-    const seed = new Uint32Array(seed_len);
+    const seed = new Uint32Array(2);
     window.crypto.getRandomValues(seed);
 
     return seed;
 }
 
 webgl_test.then(bg => {
+    // Establish WebSocket correspondence
+    const ws = new WebSocket(`ws://${location.host}/ws/`);
+    ws.binaryType = "arraybuffer";
+    // Request map data
+    ws.addEventListener("open", () => {
+        ws.send(new Uint8Array([send_opcode.MAP_REQUEST]));
+    });
+    // Handle received messages
+    ws.addEventListener("message", e => {
+        if (!(e.data instanceof ArrayBuffer)) {
+            throw new Error("Expected to receive `ArrayBuffer`");
+        }
+
+        const data = new Uint8Array(e.data);
+        switch (data[0]) {
+            case recv_opcode.MAP_DATA:
+                // Feed the map data into the wasm code
+                if (bg.load_map(new Uint8Array(data.buffer, 1)) !== 0) {
+                    throw new Error("Could not load map");
+                }
+
+                // Kick off the main loop
+                window.requestAnimationFrame(main_loop);
+                break;
+            default:
+                log(`Unexpected opcode received: ${data[0]}`);
+        }
+    });
+
+    // Get WebGL2 rendering context
     const canvas = document.getElementById("c");
     if (!(canvas instanceof HTMLCanvasElement)) {
         throw new Error("No HTMLCanvasElement with the ID \"c\"");
@@ -220,56 +266,39 @@ webgl_test.then(bg => {
 
     gl = gl_ctx;
 
+    // Initialize state within Rust (wasm) code
     bg.init();
 
-    const trans_x_input = document.getElementById("trans_x");
-    const trans_y_input = document.getElementById("trans_y");
-    const trans_z_input = document.getElementById("trans_z");
+    // Set up DOM event handling apparatus
+    const event_queue = new Uint16Vec(4);
+    const key_code_map = new Map([
+        ["KeyW", 0x01],
+        ["KeyA", 0x02],
+        ["KeyS", 0x03],
+        ["KeyD", 0x04],
+    ]);
+    const KEY_DOWN = 0x01;
+    const KEY_UP = 0x02;
 
-    const lookat_eye_x_input = document.getElementById("lookat_eye_x");
-    const lookat_eye_y_input = document.getElementById("lookat_eye_y");
-    const lookat_eye_z_input = document.getElementById("lookat_eye_z");
+    document.addEventListener("keydown", e => {
+        const key_code = key_code_map.get(e.code);
+        if (key_code !== undefined) {
+            event_queue.push((KEY_DOWN << 8) | key_code);
+        }
+    });
+    document.addEventListener("keyup", e => {
+        const key_code = key_code_map.get(e.code);
+        if (key_code !== undefined) {
+            event_queue.push((KEY_UP << 8) | key_code);
+        }
+    });
 
-    const rot_x_input = document.getElementById("rot_x");
-    const rot_y_input = document.getElementById("rot_y");
-    const rot_z_input = document.getElementById("rot_z");
-
-    if (!(trans_x_input      instanceof HTMLInputElement &&
-          trans_y_input      instanceof HTMLInputElement &&
-          trans_z_input      instanceof HTMLInputElement &&
-          lookat_eye_x_input instanceof HTMLInputElement &&
-          lookat_eye_y_input instanceof HTMLInputElement &&
-          lookat_eye_z_input instanceof HTMLInputElement &&
-          rot_x_input        instanceof HTMLInputElement &&
-          rot_y_input        instanceof HTMLInputElement &&
-          rot_z_input        instanceof HTMLInputElement)) {
-        throw new Error("Missing controls");
+    // Main loop
+    function main_loop(t: DOMHighResTimeStamp): void {
+        window.requestAnimationFrame(main_loop);
+        bg.main_loop(t, event_queue);
+        event_queue.clear();
     }
-
-    const update = () =>
-        bg.render(
-            +trans_x_input.value,
-            +trans_y_input.value,
-            +trans_z_input.value,
-            +lookat_eye_x_input.value,
-            +lookat_eye_y_input.value,
-            +lookat_eye_z_input.value,
-            +rot_x_input.value,
-            +rot_y_input.value,
-            +rot_z_input.value
-        );
-
-    update();
-
-    trans_x_input.addEventListener("input", update);
-    trans_y_input.addEventListener("input", update);
-    trans_z_input.addEventListener("input", update);
-    lookat_eye_x_input.addEventListener("input", update);
-    lookat_eye_y_input.addEventListener("input", update);
-    lookat_eye_z_input.addEventListener("input", update);
-    rot_x_input.addEventListener("input", update);
-    rot_y_input.addEventListener("input", update);
-    rot_z_input.addEventListener("input", update);
 })
 .catch(e => {
     log(`Error resolving promise \`webgl_test\`: ${e}`);

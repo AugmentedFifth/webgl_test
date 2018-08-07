@@ -15,7 +15,7 @@
             "parameter",
             "property-declaration"
         ],
-        "no-magic-numbers": [true, -2, -1, 0, 1, 2, 3, 10],
+        "no-magic-numbers": false,
         "cyclomatic-complexity": false,
         "no-bitwise": false,
         "no-consecutive-blank-lines": false,
@@ -31,6 +31,8 @@
         "no-console": false,
         "no-void-expression": [true, "ignore-arrow-function-shorthand"],
         "no-unused-variable": false,
-        "completed-docs": false
+        "completed-docs": false,
+        "max-classes-per-file": false,
+        "file-name-casing": false
     }
 }

@@ -16,8 +16,8 @@ then
 fi
 tslint -p tsconfig.json
 tsc
-#wasm-gc ./"$PROJECT_NAME"_bg.wasm
-#wasm-opt -O4 ./"$PROJECT_NAME"_bg.wasm
+wasm-gc ./"$PROJECT_NAME"_bg.wasm
+wasm-opt -O4 ./"$PROJECT_NAME"_bg.wasm
 webpack
 cp index.html ./dist
 cp style.css ./dist
