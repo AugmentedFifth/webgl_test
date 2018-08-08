@@ -14,6 +14,9 @@ pub mod key {
 extern "C" {
     /// `console.log(msg);`
     pub fn log(msg: &str);
+
+    /// https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
+    pub fn now() -> f64;
 }
 
 #[wasm_bindgen(module = "./vec")]

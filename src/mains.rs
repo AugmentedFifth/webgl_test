@@ -1,12 +1,12 @@
 use js;
 use map;
 use na;
+use physics;
 use render;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 pub struct PlayerState {
-    pub pos:    na::Point3<f32>,
     pub orient: na::Unit<na::Vector3<f32>>,
 }
 
@@ -19,7 +19,6 @@ impl PlayerState {
     #[inline]
     pub fn new() -> Self {
         PlayerState {
-            pos:    na::Point3::origin(),
             orient: na::Unit::new_unchecked(na::Vector3::new(0.0, 0.0, -1.0)),
         }
     }
@@ -38,7 +37,7 @@ pub fn load_map(map_data: &[u8]) -> i32 {
 
         let radius = map_state.get_radius();
         let (_, (x, y)) = map_state.get_hexes()[radius][radius];
-        PLAYER_STATE.lock().unwrap().pos = na::Point3::new(x, 2.0, -y);
+        physics::init_world(&map_state, &na::Point3::new(x, 3.0, -y));
 
         0
     } else {
@@ -71,21 +70,23 @@ pub fn main_loop(_time_stamp: f64, event_queue: &js::Uint16Vec) {
         }
     }
 
+    physics::WORLD.lock().unwrap().step();
+
     render::render();
 }
 
 #[inline]
 fn move_player(d: f32, forward: bool) {
-    let mut player_state = PLAYER_STATE.lock().unwrap();
-    player_state.pos +=
-        if forward { d } else { -d } * player_state.orient.unwrap();
+    //let mut player_state = PLAYER_STATE.lock().unwrap();
+    //player_state.pos +=
+    //    if forward { d } else { -d } * player_state.orient.unwrap();
 }
 
 #[inline]
 fn turn_player(a: f32, b: f32, c: f32) {
-    let mut player_state = PLAYER_STATE.lock().unwrap();
-    player_state.orient = na::Unit::new_normalize(
-        na::Rotation3::from_euler_angles(a, b, c)
-            * player_state.orient.unwrap(),
-    );
+    //let mut player_state = PLAYER_STATE.lock().unwrap();
+    //player_state.orient = na::Unit::new_normalize(
+    //    na::Rotation3::from_euler_angles(a, b, c)
+    //        * player_state.orient.unwrap(),
+    //);
 }

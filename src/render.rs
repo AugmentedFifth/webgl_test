@@ -2,6 +2,7 @@ use geometry;
 use mains;
 use map;
 use na;
+use physics;
 use std::{f32::consts::FRAC_PI_2, sync::Mutex};
 use webgl;
 
@@ -182,7 +183,12 @@ pub fn render() {
         panic!("Did not call `init` before callng `render`")
     });
 
-    // Retrieve player state
+    // Retrieve physical state
+    let world = physics::WORLD.lock().unwrap();
+    let player_body =
+        world.rigid_body(*physics::PLAYER.lock().unwrap()).unwrap();
+
+    // Retrieve player-specific state
     let player_state = mains::PLAYER_STATE.lock().unwrap();
 
     // Reset the canvas
@@ -199,10 +205,11 @@ pub fn render() {
         2000.0,
     );
     let world =
-        na::Matrix4::new_rotation(na::Vector3::new(-FRAC_PI_2, 0.0, 0.0)); // * na::Matrix4::new_scaling(1.0);
+        na::Matrix4::new_rotation(na::Vector3::new(-FRAC_PI_2, 0.0, 0.0));
+    let player_com = player_body.center_of_mass();
     let view = na::Matrix4::look_at_rh(
-        &player_state.pos,
-        &(player_state.pos + player_state.orient.unwrap()),
+        &player_com,
+        &(player_com + player_state.orient.unwrap()),
         &na::Vector3::y(),
     );
     view_proj *= view;

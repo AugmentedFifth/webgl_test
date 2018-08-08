@@ -223,6 +223,10 @@ export function get_seed(): Uint32Array {
     return seed;
 }
 
+export function now(): DOMHighResTimeStamp {
+    return performance.now();
+}
+
 webgl_test.then(bg => {
     // Establish WebSocket correspondence
     const ws = new WebSocket(`ws://${location.host}/ws/`);
