@@ -1,9 +1,8 @@
 "use strict";
 
-import * as recv_opcode from "./recv_opcode";
-import * as send_opcode from "./send_opcode";
-import { Uint16Vec } from "./vec";
-
+import * as Event from "./event";
+import * as RecvOpcode from "./recv_opcode";
+import * as SendOpcode from "./send_opcode";
 const webgl_test = import("./webgl_test");
 
 //////// Globals     ////////
@@ -190,21 +189,11 @@ export function uniform2f(loc: WebGLUniformLocation,
     gl.uniform2f(loc, x, y);
 }
 
-export function uniform3fv(loc:  WebGLUniformLocation,
-                           data: Float32Array): void {
-    gl.uniform3fv(loc, data);
-}
-
 export function uniform3f(loc: WebGLUniformLocation,
                           x:   number,
                           y:   number,
                           z:   number): void {
     gl.uniform3f(loc, x, y, z);
-}
-
-export function uniform4fv(loc:  WebGLUniformLocation,
-                           data: Float32Array): void {
-    gl.uniform4fv(loc, data);
 }
 
 export function uniform_matrix4fv(loc:  WebGLUniformLocation,
@@ -233,7 +222,7 @@ webgl_test.then(bg => {
     ws.binaryType = "arraybuffer";
     // Request map data
     ws.addEventListener("open", () => {
-        ws.send(new Uint8Array([send_opcode.MAP_REQUEST]));
+        ws.send(new Uint8Array([SendOpcode.MAP_REQUEST]));
     });
     // Handle received messages
     ws.addEventListener("message", e => {
@@ -243,7 +232,7 @@ webgl_test.then(bg => {
 
         const data = new Uint8Array(e.data);
         switch (data[0]) {
-            case recv_opcode.MAP_DATA:
+            case RecvOpcode.MAP_DATA:
                 // Feed the map data into the wasm code
                 if (bg.load_map(new Uint8Array(data.buffer, 1)) !== 0) {
                     throw new Error("Could not load map");
@@ -274,26 +263,47 @@ webgl_test.then(bg => {
     bg.init();
 
     // Set up DOM event handling apparatus
-    const event_queue = new Uint16Vec(4);
-    const key_code_map = new Map([
-        ["KeyW", 0x01],
-        ["KeyA", 0x02],
-        ["KeyS", 0x03],
-        ["KeyD", 0x04],
-    ]);
-    const KEY_DOWN = 0x01;
-    const KEY_UP = 0x02;
+    const event_queue = new Event.EventQueue();
+
+    // Pointer locking
+    let pointer_locked = false;
+    document.addEventListener("pointerlockchange", () => {
+        pointer_locked = !pointer_locked;
+    });
+    document.addEventListener("pointerlockerror", () => {
+        log("pointerlockerror");
+    });
+    canvas.addEventListener("click", e => {
+        if (e.button === 0 && !pointer_locked) {
+            canvas.requestPointerLock();
+        }
+    });
 
     document.addEventListener("keydown", e => {
-        const key_code = key_code_map.get(e.code);
+        const key_code = Event.get_key_code(e.code);
         if (key_code !== undefined) {
-            event_queue.push((KEY_DOWN << 8) | key_code);
+            event_queue.push(
+                new Event.Event(Event.KEY_DOWN, new Uint8Array([key_code]))
+            );
+        } else if (pointer_locked && e.code === "Escape") {
+            // Always allow user to unlock pointer using ESC key
+            document.exitPointerLock();
         }
     });
     document.addEventListener("keyup", e => {
-        const key_code = key_code_map.get(e.code);
+        const key_code = Event.get_key_code(e.code);
         if (key_code !== undefined) {
-            event_queue.push((KEY_UP << 8) | key_code);
+            event_queue.push(
+                new Event.Event(Event.KEY_UP, new Uint8Array([key_code]))
+            );
+        }
+    });
+    canvas.addEventListener("mousemove", e => {
+        if (pointer_locked) {
+            const movement_data = new Float32Array([e.movementX, e.movementY]);
+            event_queue.push(new Event.Event(
+                Event.MOUSE_MOVE, new Uint8Array(movement_data.buffer)
+            ));
         }
     });
 

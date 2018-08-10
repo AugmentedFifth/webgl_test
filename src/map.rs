@@ -228,6 +228,11 @@ impl RgbColor {
     pub fn rgba(&self) -> [f32; 4] {
         [self.0[0], self.0[1], self.0[2], 1.0]
     }
+
+    #[inline]
+    pub fn as_tuple(&self) -> (f32, f32, f32) {
+        (self.0[0], self.0[1], self.0[2])
+    }
 }
 
 impl<'a> Iterator for MapIter<'a> {

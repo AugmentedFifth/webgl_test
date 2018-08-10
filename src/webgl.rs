@@ -124,13 +124,7 @@ extern "C" {
     pub fn uniform2f(loc: &WebGLUniformLocation, x: f32, y: f32);
 
     /// Specifies the value of a uniform.
-    pub fn uniform3fv(loc: &WebGLUniformLocation, data: &[f32]);
-
-    /// Specifies the value of a uniform.
     pub fn uniform3f(loc: &WebGLUniformLocation, x: f32, y: f32, z: f32);
-
-    /// Specifies the value of a uniform.
-    pub fn uniform4fv(loc: &WebGLUniformLocation, data: &[f32]);
 
     /// Specifies the value of a uniform.
     pub fn uniform_matrix4fv(loc: &WebGLUniformLocation, data: &[f32]);

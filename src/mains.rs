@@ -1,4 +1,6 @@
-use js;
+use byteorder::{NativeEndian, ReadBytesExt};
+use controls::{self, Key};
+use js::{self, EventType};
 use map;
 use na;
 use physics;
@@ -37,7 +39,7 @@ pub fn load_map(map_data: &[u8]) -> i32 {
 
         let radius = map_state.get_radius();
         let (_, (x, y)) = map_state.get_hexes()[radius][radius];
-        physics::init_world(&map_state, &na::Point3::new(x, 3.0, -y));
+        physics::init_world(&map_state, &na::Point3::new(x, 4.0, -y));
 
         0
     } else {
@@ -46,47 +48,54 @@ pub fn load_map(map_data: &[u8]) -> i32 {
 }
 
 #[wasm_bindgen]
-pub fn main_loop(_time_stamp: f64, event_queue: &js::Uint16Vec) {
+pub fn main_loop(_time_stamp: f64, event_queue: &js::EventQueue) {
+    // Handle events sent from JS "event queue"
     for i in 0..event_queue.len() {
         let event_data = event_queue.get(i);
-        match (event_data >> 8) as u8 {
-            js::KEY_DOWN => match (event_data & 0x00FF) as u8 {
-                js::key::W => {
-                    move_player(0.5, true);
+        let event_opcode = event_data.opcode();
+
+        if let Some(e) = EventType::from_u8(event_opcode) {
+            match e {
+                EventType::KeyDown =>
+                    if let Some(k) = Key::from_u8(event_data.payload()[0]) {
+                        controls::press(k);
+                    },
+                EventType::KeyUp =>
+                    if let Some(k) = Key::from_u8(event_data.payload()[0]) {
+                        controls::release(k);
+                    },
+                EventType::MouseMove => {
+                    let payload = event_data.payload();
+                    controls::handle_mouse_movement(
+                        payload.as_ref().read_f32::<NativeEndian>().unwrap(),
+                        payload[4..]
+                            .as_ref()
+                            .read_f32::<NativeEndian>()
+                            .unwrap(),
+                    );
                 },
-                js::key::A => {
-                    turn_player(0.0, 0.1, 0.0);
-                },
-                js::key::S => {
-                    move_player(0.5, false);
-                },
-                js::key::D => {
-                    turn_player(0.0, -0.1, 0.0);
-                },
-                _ => (),
-            },
-            js::KEY_UP => {},
-            _ => (),
+            }
         }
     }
 
-    physics::WORLD.lock().unwrap().step();
+    // Handle pressed keys
+    if controls::is_pressed(Key::W) {
+        let player_state = PLAYER_STATE.lock().unwrap();
+        let lin_acc = player_state.orient.unwrap() * physics::CONTROL_FORCE;
 
+        physics::update_control_acc(lin_acc);
+    } else if controls::is_pressed(Key::S) {
+        let player_state = PLAYER_STATE.lock().unwrap();
+        let lin_acc = player_state.orient.unwrap() * -physics::CONTROL_FORCE;
+
+        physics::update_control_acc(lin_acc);
+    } else {
+        physics::update_control_acc(na::Vector3::zeros());
+    }
+
+    // Run physics
+    physics::step();
+
+    // Render to screen
     render::render();
-}
-
-#[inline]
-fn move_player(d: f32, forward: bool) {
-    //let mut player_state = PLAYER_STATE.lock().unwrap();
-    //player_state.pos +=
-    //    if forward { d } else { -d } * player_state.orient.unwrap();
-}
-
-#[inline]
-fn turn_player(a: f32, b: f32, c: f32) {
-    //let mut player_state = PLAYER_STATE.lock().unwrap();
-    //player_state.orient = na::Unit::new_normalize(
-    //    na::Rotation3::from_euler_angles(a, b, c)
-    //        * player_state.orient.unwrap(),
-    //);
 }

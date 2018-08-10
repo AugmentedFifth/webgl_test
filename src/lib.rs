@@ -1,6 +1,7 @@
 #![feature(core_intrinsics, exact_chunks, use_extern_macros)]
 //#![allow(unused)]
 
+mod controls;
 mod geometry;
 mod js;
 mod mains;
@@ -16,6 +17,7 @@ pub use random::*;
 pub use webgl::*;
 
 extern crate bincode;
+extern crate byteorder;
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra as na;

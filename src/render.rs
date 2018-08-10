@@ -227,16 +227,22 @@ pub fn render() {
     //let green = [0.1725f32, 0.6902, 0.2157, 1.0];
 
     // Set the light direction
-    webgl::uniform3fv(
+    let light_dir = na::Vector3::new(0.7, 1.0, 0.5).normalize();
+    webgl::uniform3f(
         &gl_state.reverse_light_dir_uni_loc,
-        na::Vector3::new(0.7, 1.0, 0.5).normalize().as_slice(),
+        light_dir[0],
+        light_dir[1],
+        light_dir[2],
     );
 
     for (hex, (x, y)) in map::MAP.lock().unwrap().iter() {
         // Set the color
-        webgl::uniform3fv(
+        let color = hex.color.as_floating();
+        webgl::uniform3f(
             &gl_state.color_uni_loc,
-            hex.color.as_floating().rgb(),
+            color.r(),
+            color.g(),
+            color.b(),
         );
 
         // Set the coordinates
