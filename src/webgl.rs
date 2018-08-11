@@ -132,9 +132,9 @@ extern "C" {
     fn enable_sys(cap: u32);
 }
 
-pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
-pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
-pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
+pub const DEPTH_BUFFER_BIT: u32 = 0x0000_0100;
+pub const STENCIL_BUFFER_BIT: u32 = 0x0000_0400;
+pub const COLOR_BUFFER_BIT: u32 = 0x0000_4000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]

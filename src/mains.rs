@@ -26,6 +26,12 @@ impl PlayerState {
     }
 }
 
+impl Default for PlayerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 pub fn init() {
     render::init();

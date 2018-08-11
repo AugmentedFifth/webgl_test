@@ -10,7 +10,7 @@ lazy_static! {
     static ref ENGINE: Mutex<pcg_rand::Pcg32> =
         Mutex::new(pcg_rand::Pcg32::from_seed({
             let seed = get_seed();
-            let seed = seed[0] as u64 | ((seed[1] as u64) << 32);
+            let seed = u64::from(seed[0]) | (u64::from(seed[1]) << 32);
 
             pcg_rand::seeds::PcgSeeder::seed(seed)
         }));

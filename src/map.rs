@@ -196,9 +196,9 @@ impl RgbByteColor {
     #[inline]
     pub fn as_floating(&self) -> RgbColor {
         RgbColor([
-            self.0[0] as f32 / 255.0,
-            self.0[1] as f32 / 255.0,
-            self.0[2] as f32 / 255.0,
+            f32::from(self.0[0]) / 255.0,
+            f32::from(self.0[1]) / 255.0,
+            f32::from(self.0[2]) / 255.0,
         ])
     }
 }
@@ -304,7 +304,7 @@ impl<'a> MapDataAxialIter<'a> {
     }
 
     #[inline]
-    pub fn as_cartesian(self) -> MapDataCartesianIter<'a> {
+    pub fn as_cartesian(&self) -> MapDataCartesianIter<'a> {
         MapDataCartesianIter {
             data: self.data,
             row:  self.row,
@@ -353,7 +353,7 @@ impl<'a> MapDataCartesianIter<'a> {
     }
 
     #[inline]
-    pub fn as_axial(self) -> MapDataAxialIter<'a> {
+    pub fn as_axial(&self) -> MapDataAxialIter<'a> {
         MapDataAxialIter {
             data: self.data,
             row:  self.row,
