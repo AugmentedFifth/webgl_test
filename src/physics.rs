@@ -100,7 +100,7 @@ fn time_in_sec() -> f64 {
 pub fn update_control_acc(lin_acc: na::Vector3<f32>) {
     let (curr_lin_acc, curr_handle) = get_control_acc();
 
-    js::log(&format!("{:?}, {:?}", curr_lin_acc, lin_acc));
+    //js::log(&format!("{:?}, {:?}", curr_lin_acc, lin_acc));
 
     if curr_lin_acc != lin_acc {
         let mut world = WORLD.lock().unwrap();
@@ -111,7 +111,7 @@ pub fn update_control_acc(lin_acc: na::Vector3<f32>) {
         ctrl_force.add_body_part(*PLAYER.lock().unwrap());
         let ctrl_force_handle = world.add_force_generator(ctrl_force);
 
-        js::log(&format!("ctrl_force_handle: {}", ctrl_force_handle));
+        //js::log(&format!("ctrl_force_handle: {}", ctrl_force_handle));
 
         set_control_acc(lin_acc, ctrl_force_handle);
     }
