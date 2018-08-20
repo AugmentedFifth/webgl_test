@@ -33,6 +33,7 @@
         "no-unused-variable": false,
         "completed-docs": false,
         "max-classes-per-file": false,
-        "file-name-casing": false
+        "file-name-casing": false,
+        "comment-format": false
     }
 }

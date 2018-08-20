@@ -23,7 +23,8 @@ extern "C" {
     fn get_seed() -> Box<[u32]>;
 }
 
-/// Return the next random `f32` selected from the half-open interval `[0, 1)`.
+/// Return the next random `f32` uniformly selected from the half-open interval
+/// `[0, 1)`.
 #[inline]
 pub fn next_f32() -> f32 {
     lazy_static! {

@@ -1,25 +1,12 @@
 use random;
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct MapData {
-    radius:        usize,
-    hexes:         Vec<Vec<Hex>>,
-    light_sources: Vec<LightSource>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct Hex {
-    pub height: f32,
-    pub color:  RgbByteColor,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-pub struct RgbByteColor([u8; 3]);
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub enum LightSource {
-    Directional([f32; 3]),
-}
+use std::{fs, io::Read};
+use webgl_test_common::{
+    Hex,
+    MapData,
+    PngData,
+    RgbByteColor,
+    SkyboxCompressed,
+};
 
 struct CubeRing {
     cube:   Cube,
@@ -34,16 +21,9 @@ type Axial = (isize, isize);
 const STAY_PROB: f32 = 0.75;
 const STEP_SIZE: f32 = 0.5;
 
-impl Hex {
-    pub fn new(height: f32, color: RgbByteColor) -> Self {
-        Self { height, color }
-    }
-}
-
-impl RgbByteColor {
-    pub fn new_random() -> Self {
-        RgbByteColor(random::gen())
-    }
+#[inline]
+fn random_byte_color() -> RgbByteColor {
+    RgbByteColor(random::gen())
 }
 
 #[inline]
@@ -151,7 +131,7 @@ pub fn generate_map(radius: usize) -> MapData {
         hex_parents.push(v);
     }
 
-    hexes[radius][radius] = Hex::new(0.0, RgbByteColor::new_random());
+    hexes[radius][radius] = Hex::new(0.0, random_byte_color());
     hex_parents[radius][radius] = (0.0, 0);
 
     let rad = radius as isize;
@@ -213,14 +193,26 @@ pub fn generate_map(radius: usize) -> MapData {
             let our_height = parent_height + our_dir as f32 * STEP_SIZE;
 
             let (i, j) = axial_to_indices(cube_to_axial(c), radius);
-            hexes[i][j] = Hex::new(our_height, RgbByteColor::new_random());
+            hexes[i][j] = Hex::new(our_height, random_byte_color());
             hex_parents[i][j] = (our_height, our_dir);
         }
     }
 
-    MapData {
-        radius,
-        hexes,
-        light_sources: Vec::new(),
+    let mut skybox_path = "./img/skybox".to_owned();
+    let mut skybox = SkyboxCompressed::default();
+    for i in 0..6 {
+        skybox_path.push(char::from('0' as u8 + i));
+        skybox_path.push_str(".png");
+        let mut f = fs::File::open(&skybox_path).unwrap();
+        skybox_path.truncate("./img/skybox".len());
+
+        let mut png_buf =
+            Vec::with_capacity(f.metadata().unwrap().len() as usize);
+        f.read_to_end(&mut png_buf).unwrap();
+        f.sync_all().unwrap();
+
+        skybox.images[i as usize] = PngData::new(png_buf);
     }
+
+    MapData::new(radius, hexes, Vec::new(), skybox)
 }

@@ -7,6 +7,7 @@ use physics;
 use render;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
+use webgl_test_common::MapData;
 
 pub struct PlayerState {
     pub orient: na::Unit<na::Vector3<f32>>,
@@ -39,9 +40,9 @@ pub fn init() {
 
 #[wasm_bindgen]
 pub fn load_map(map_data: &[u8]) -> i32 {
-    if let Some(map_data) = map::MapData::from_raw_data(map_data) {
+    if let Some(map_data) = MapData::from_raw_data(map_data) {
         let mut map_state = map::MAP.lock().unwrap();
-        *map_state = map::Map::from_map_data(map_data);
+        *map_state = map::Map::from_map_data(&map_data);
 
         let radius = map_state.get_radius();
         let (_, (x, y)) = map_state.get_hexes()[radius][radius];

@@ -13,4 +13,4 @@ struct_field_align_threshold = 24
 tab_spaces = 4
 use_field_init_shorthand = true
 use_try_shorthand = true
-wrap_comments = true
+wrap_comments = false

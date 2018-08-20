@@ -7,11 +7,28 @@ use std::{f32::consts::FRAC_PI_2, sync::Mutex};
 use webgl;
 
 struct GlState {
+    terrain: TerrainRendering,
+    skybox:  SkyboxRendering,
+}
+
+struct TerrainRendering {
+    program:                   webgl::WebGLProgram,
+    vao:                       webgl::WebGLVertexArrayObject,
     world_uni_loc:             webgl::WebGLUniformLocation,
     world_view_proj_uni_loc:   webgl::WebGLUniformLocation,
     reverse_light_dir_uni_loc: webgl::WebGLUniformLocation,
     color_uni_loc:             webgl::WebGLUniformLocation,
     displacement_uni_loc:      webgl::WebGLUniformLocation,
+}
+
+struct SkyboxRendering {
+    program:         webgl::WebGLProgram,
+    vao:             webgl::WebGLVertexArrayObject,
+    proj_uni_loc:    webgl::WebGLUniformLocation,
+    view_uni_loc:    webgl::WebGLUniformLocation,
+    texture_uni_loc: webgl::WebGLUniformLocation,
+    cube_map:        webgl::WebGLTexture,
+    textures_loaded: bool,
 }
 
 lazy_static! {
@@ -49,13 +66,45 @@ uniform vec3 u_color;
 out vec4 outColor;
 
 void main() {
-    // vec3 normal = normalize(v_normal);
-
     float light = dot(v_normal, u_reverseLightDirection);
 
     outColor = vec4(u_color * light, 1.0);
 }
 "#;
+
+const SKYBOX_VERTEX_SHADER_SRC: &str = r#"#version 300 es
+
+in vec3 a_position;
+
+uniform mat4 u_projection;
+uniform mat4 u_view;
+
+out vec3 texCoords;
+
+void main() {
+    texCoords = a_position;
+
+    gl_Position = (u_projection * u_view * vec4(a_position, 1.0)).xyww;
+}
+"#;
+
+const SKYBOX_FRAGMENT_SHADER_SRC: &str = r#"#version 300 es
+
+precision mediump float;
+
+in vec3 texCoords;
+
+uniform samplerCube u_texture;
+
+out vec4 fragmentColor;
+
+void main() {
+    fragmentColor = texture(u_texture, texCoords);
+}
+"#;
+
+const SKYBOX_TEXTURE_INDEX: webgl::TextureIndex =
+    webgl::TextureIndex::Texture0;
 
 pub fn init() {
     let vertex_shader = webgl::create_shader(
@@ -87,14 +136,6 @@ pub fn init() {
                 "There is no uniform with the name \
                  \"u_reverseLightDirection\"",
             );
-
-    *GL_STATE.lock().unwrap() = Some(GlState {
-        world_uni_loc,
-        world_view_proj_uni_loc,
-        reverse_light_dir_uni_loc,
-        color_uni_loc,
-        displacement_uni_loc,
-    });
     ////////////////////////////////////////////////////////////////////////
 
     let position_attr_loc = webgl::get_attr_location(&program, "a_position");
@@ -130,8 +171,8 @@ pub fn init() {
     );
     ////////////////////////////////////////////////////////////////////////
 
-    let prism_vao = webgl::create_vertex_array();
-    webgl::bind_vertex_array(&prism_vao);
+    let vao = webgl::create_vertex_array();
+    webgl::bind_vertex_array(&vao);
     webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &prism_vert_buffer);
     webgl::enable_vertex_attr_array(position_attr_loc);
     webgl::vertex_attr_ptr(
@@ -155,10 +196,159 @@ pub fn init() {
     );
     ////////////////////////////////////////////////////////////////////////
 
+    let terrain = TerrainRendering {
+        program,
+        vao,
+        world_uni_loc,
+        world_view_proj_uni_loc,
+        reverse_light_dir_uni_loc,
+        color_uni_loc,
+        displacement_uni_loc,
+    };
+
+    let vertex_shader = webgl::create_shader(
+        webgl::ShaderType::VertexShader,
+        SKYBOX_VERTEX_SHADER_SRC,
+    ).expect("Failed to create vertex shader");
+    let fragment_shader = webgl::create_shader(
+        webgl::ShaderType::FragmentShader,
+        SKYBOX_FRAGMENT_SHADER_SRC,
+    ).expect("Failed to create fragment shader");
+
+    let program = webgl::create_program(&vertex_shader, &fragment_shader)
+        .expect("Failed to link GLSL program");
+    webgl::use_program(&program);
+
+    let proj_uni_loc = webgl::get_uniform_location(&program, "u_projection")
+        .expect("There is no uniform with the name \"u_projection\"");
+    let view_uni_loc = webgl::get_uniform_location(&program, "u_view")
+        .expect("There is no uniform with the name \"u_view\"");
+    let texture_uni_loc = webgl::get_uniform_location(&program, "u_texture")
+        .expect("There is no uniform with the name \"u_texture\"");
+    ////////////////////////////////////////////////////////////////////////
+
+    let position_attr_loc = webgl::get_attr_location(&program, "a_position");
+    if position_attr_loc < 0 {
+        panic!("There is no attribute with the name \"a_position\"");
+    }
+    let position_attr_loc = position_attr_loc as u32;
+    ////////////////////////////////////////////////////////////////////////
+
+    let tex_pos_buffer = webgl::create_buffer();
+    webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &tex_pos_buffer);
+    webgl::buffer_data_f32(
+        webgl::BufferType::ArrayBuffer,
+        &[
+            -1.0, 1.0, -1.0, ////////////////
+            -1.0, -1.0, -1.0, ////////////////
+            1.0, -1.0, -1.0, ////////////////
+            1.0, -1.0, -1.0, ////////////////
+            1.0, 1.0, -1.0, ////////////////
+            -1.0, 1.0, -1.0, ////////////////
+            ////////////////////////////////////////////////////////////////
+            -1.0, -1.0, 1.0, ////////////////
+            -1.0, -1.0, -1.0, ////////////////
+            -1.0, 1.0, -1.0, ////////////////
+            -1.0, 1.0, -1.0, ////////////////
+            -1.0, 1.0, 1.0, ////////////////
+            -1.0, -1.0, 1.0, ////////////////
+            ////////////////////////////////////////////////////////////////
+            1.0, -1.0, -1.0, ////////////////
+            1.0, -1.0, 1.0, ////////////////
+            1.0, 1.0, 1.0, ////////////////
+            1.0, 1.0, 1.0, ////////////////
+            1.0, 1.0, -1.0, ////////////////
+            1.0, -1.0, -1.0, ////////////////
+            ////////////////////////////////////////////////////////////////
+            -1.0, -1.0, 1.0, ////////////////
+            -1.0, 1.0, 1.0, ////////////////
+            1.0, 1.0, 1.0, ////////////////
+            1.0, 1.0, 1.0, ////////////////
+            1.0, -1.0, 1.0, ////////////////
+            -1.0, -1.0, 1.0, ////////////////
+            ////////////////////////////////////////////////////////////////
+            -1.0, 1.0, -1.0, ////////////////
+            1.0, 1.0, -1.0, ////////////////
+            1.0, 1.0, 1.0, ////////////////
+            1.0, 1.0, 1.0, ////////////////
+            -1.0, 1.0, 1.0, ////////////////
+            -1.0, 1.0, -1.0, ////////////////
+            ////////////////////////////////////////////////////////////////
+            -1.0, -1.0, -1.0, ////////////////
+            -1.0, -1.0, 1.0, ////////////////
+            1.0, -1.0, -1.0, ////////////////
+            1.0, -1.0, -1.0, ////////////////
+            -1.0, -1.0, 1.0, ////////////////
+            1.0, -1.0, 1.0, ////////////////
+        ],
+        webgl::UsageType::StaticDraw,
+        0,
+        None,
+    );
+    ////////////////////////////////////////////////////////////////////////
+
+    let vao = webgl::create_vertex_array();
+    webgl::bind_vertex_array(&vao);
+    webgl::bind_buffer(webgl::BufferType::ArrayBuffer, &tex_pos_buffer);
+    webgl::enable_vertex_attr_array(position_attr_loc);
+    webgl::vertex_attr_ptr(
+        position_attr_loc,
+        3,                      // Three components per iteration
+        webgl::DataType::Float, // The data is `f32`s
+        false,                  // Don't normalize to clip space
+        0,                      // Stride (in bytes)
+        0,                      // Offset (in bytes)
+    );
+    ////////////////////////////////////////////////////////////////////////
+
+    let cube_map = webgl::create_texture();
+    webgl::active_texture(SKYBOX_TEXTURE_INDEX);
+    webgl::bind_texture(webgl::TextureTarget::TextureCubeMap, &cube_map);
+    webgl::tex_parameteri(
+        webgl::TextureTarget::TextureCubeMap,
+        webgl::TextureParam::TextureMinFilter,
+        webgl::NEAREST,
+    );
+    webgl::tex_parameteri(
+        webgl::TextureTarget::TextureCubeMap,
+        webgl::TextureParam::TextureMagFilter,
+        webgl::NEAREST,
+    );
+    webgl::tex_parameteri(
+        webgl::TextureTarget::TextureCubeMap,
+        webgl::TextureParam::TextureWrapS,
+        webgl::CLAMP_TO_EDGE,
+    );
+    webgl::tex_parameteri(
+        webgl::TextureTarget::TextureCubeMap,
+        webgl::TextureParam::TextureWrapT,
+        webgl::CLAMP_TO_EDGE,
+    );
+    webgl::tex_parameteri(
+        webgl::TextureTarget::TextureCubeMap,
+        webgl::TextureParam::TextureWrapR,
+        webgl::CLAMP_TO_EDGE,
+    );
+    webgl::pixel_storei(webgl::PixelStoreParam::UnpackAlignment, 1);
+    webgl::uniform1i(&texture_uni_loc, SKYBOX_TEXTURE_INDEX.as_index() as i32);
+    ////////////////////////////////////////////////////////////////////////
+
+    let skybox = SkyboxRendering {
+        program,
+        vao,
+        proj_uni_loc,
+        view_uni_loc,
+        texture_uni_loc,
+        cube_map,
+        textures_loaded: false,
+    };
+
+    *GL_STATE.lock().unwrap() = Some(GlState { terrain, skybox });
+    ////////////////////////////////////////////////////////////////////////
+
+    // Reset the canvas
     webgl::resize_canvas_to_display();
     webgl::reset_viewport();
-
-    // Clear the canvas
     webgl::clear_color(0.0, 0.0, 0.0, 0.0);
     webgl::clear(webgl::COLOR_BUFFER_BIT | webgl::DEPTH_BUFFER_BIT);
 
@@ -166,20 +356,12 @@ pub fn init() {
     webgl::enable(webgl::Capability::CullFace);
     webgl::enable(webgl::Capability::DepthTest);
     //////////////////////////////////////////////////
-
-    // Tell it to use our program (pair of shaders)
-    webgl::use_program(&program);
-    ////////////////////////////////////////////////////////////////////////
-
-    // Bind the attribute/buffer set we want
-    webgl::bind_vertex_array(&prism_vao);
-    ////////////////////////////////////////////////////////////////////////
 }
 
 pub fn render() {
     // Retrieve GL state
-    let gl_state_lock = GL_STATE.lock().unwrap();
-    let gl_state = gl_state_lock.as_ref().unwrap_or_else(|| {
+    let mut gl_state_lock = GL_STATE.lock().unwrap();
+    let gl_state = gl_state_lock.as_mut().unwrap_or_else(|| {
         panic!("Did not call `init` before callng `render`")
     });
 
@@ -191,6 +373,9 @@ pub fn render() {
     // Retrieve player-specific state
     let player_state = mains::PLAYER_STATE.lock().unwrap();
 
+    // Retrieve map state
+    let map_state = map::MAP.lock().unwrap();
+
     // Reset the canvas
     webgl::resize_canvas_to_display();
     webgl::reset_viewport();
@@ -198,7 +383,7 @@ pub fn render() {
     webgl::clear(webgl::COLOR_BUFFER_BIT | webgl::DEPTH_BUFFER_BIT);
 
     // Compute transformation matrices
-    let mut view_proj = na::Matrix4::new_perspective(
+    let proj = na::Matrix4::new_perspective(
         webgl::get_canvas_width() / webgl::get_canvas_height(),
         0.875,
         1.0,
@@ -207,46 +392,70 @@ pub fn render() {
     let world =
         na::Matrix4::new_rotation(na::Vector3::new(-FRAC_PI_2, 0.0, 0.0));
     let player_com = player_body.center_of_mass();
+    let player_orient = player_state.orient.unwrap();
     let view = na::Matrix4::look_at_rh(
         &player_com,
-        &(player_com + player_state.orient.unwrap()),
+        &(player_com + player_orient),
         &na::Vector3::y(),
-    );
-    view_proj *= view;
-    view_proj *= world;
+    ) * world;
+    let view_rot_only =
+        na::Rotation3::look_at_rh(&player_orient, &na::Vector3::y());
+    let view_proj = proj * view;
+
+    ////////////////////////////////////////////////////////////////////
+    //////////////////////// Rendering terrain /////////////////////////
+    ////////////////////////////////////////////////////////////////////
+
+    // Tell it to use the terrain program (pair of shaders)
+    webgl::use_program(&gl_state.terrain.program);
+    // Bind the attribute/buffer set we want
+    webgl::bind_vertex_array(&gl_state.terrain.vao);
+    ////////////////////////////////////////////////////////////////////
 
     // Pass in the world matrix
-    webgl::uniform_matrix4fv(&gl_state.world_uni_loc, world.as_slice());
+    webgl::uniform_matrix4fv(
+        &gl_state.terrain.world_uni_loc,
+        world.as_slice(),
+    );
 
     // Pass in the world view/projection matrix
     webgl::uniform_matrix4fv(
-        &gl_state.world_view_proj_uni_loc,
+        &gl_state.terrain.world_view_proj_uni_loc,
         view_proj.as_slice(),
     );
-
-    //let green = [0.1725f32, 0.6902, 0.2157, 1.0];
 
     // Set the light direction
     let light_dir = na::Vector3::new(0.7, 1.0, 0.5).normalize();
     webgl::uniform3f(
-        &gl_state.reverse_light_dir_uni_loc,
+        &gl_state.terrain.reverse_light_dir_uni_loc,
         light_dir[0],
         light_dir[1],
         light_dir[2],
     );
 
-    for (hex, (x, y)) in map::MAP.lock().unwrap().iter() {
+    let player_cube_coord =
+        geometry::pixel_to_cube(player_com[0], player_com[2]);
+    let player_hex = map_state.index_by_cube(player_cube_coord);
+    for (hex, (x, y)) in player_hex
+        .into_iter()
+        .chain(map_state.iter_radial(player_cube_coord))
+    {
         // Set the color
-        let color = hex.color.as_floating();
+        let color = map::RgbColor::from_byte_color(hex.color.clone());
         webgl::uniform3f(
-            &gl_state.color_uni_loc,
+            &gl_state.terrain.color_uni_loc,
             color.r(),
             color.g(),
             color.b(),
         );
 
         // Set the coordinates
-        webgl::uniform3f(&gl_state.displacement_uni_loc, *x, *y, hex.height);
+        webgl::uniform3f(
+            &gl_state.terrain.displacement_uni_loc,
+            *x,
+            *y,
+            hex.height,
+        );
         ////////////////////////////////////////////////////////////////////
 
         // Draw!
@@ -257,4 +466,57 @@ pub fn render() {
         );
         ////////////////////////////////////////////////////////////////////
     }
+
+    ////////////////////////////////////////////////////////////////////
+    ///////////////////////// Rendering skybox /////////////////////////
+    ////////////////////////////////////////////////////////////////////
+
+    // Tell it to use the skybox program (pair of shaders)
+    webgl::use_program(&gl_state.skybox.program);
+    // Bind the attribute/buffer set we want
+    webgl::bind_vertex_array(&gl_state.skybox.vao);
+    ////////////////////////////////////////////////////////////////////
+
+    webgl::depth_func(webgl::DepthFunc::LEqual);
+
+    webgl::uniform_matrix4fv(&gl_state.skybox.proj_uni_loc, proj.as_slice());
+    webgl::uniform_matrix4fv(
+        &gl_state.skybox.view_uni_loc,
+        view_rot_only.to_homogeneous().as_slice(),
+    );
+    ////////////////////////////////////////////////////////////////////
+
+    webgl::active_texture(SKYBOX_TEXTURE_INDEX);
+    webgl::bind_texture(
+        webgl::TextureTarget::TextureCubeMap,
+        &gl_state.skybox.cube_map,
+    );
+
+    if !gl_state.skybox.textures_loaded {
+        for (img, bind_pt) in map_state.skybox.img_iter() {
+            let format = if img.has_alpha() {
+                webgl::ColorFormat::RGBA
+            } else {
+                webgl::ColorFormat::RGB
+            };
+            if img.has_eight_bit_channels() {
+                webgl::tex_image_2d_u8(
+                    bind_pt,
+                    0,
+                    format,
+                    img.get_width() as i32,
+                    img.get_height() as i32,
+                    format,
+                    img.get_data(),
+                );
+            } else {
+                unimplemented!();
+            }
+        }
+
+        gl_state.skybox.textures_loaded = true;
+    }
+
+    webgl::draw_arrays(webgl::RenderingPrimitive::Triangles, 0, 3 * 2 * 6);
+    webgl::depth_func(webgl::DepthFunc::Less);
 }

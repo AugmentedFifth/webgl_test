@@ -8,9 +8,7 @@ extern crate actix_web;
 extern crate bincode;
 extern crate pcg_rand;
 extern crate rand;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
+extern crate webgl_test_common;
 
 use actix::{Actor, StreamHandler};
 use actix_web::{fs, http, server, ws, App, HttpRequest};

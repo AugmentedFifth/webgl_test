@@ -21,4 +21,5 @@ wasm-opt -O4 ./"$PROJECT_NAME"_bg.wasm
 webpack
 cp index.html ./dist
 cp style.css ./dist
+cp -a img ./dist
 cd ..

@@ -196,13 +196,39 @@ export function uniform3f(loc: WebGLUniformLocation,
     gl.uniform3f(loc, x, y, z);
 }
 
+export function uniform_matrix3fv(loc:  WebGLUniformLocation,
+                                  data: Float32Array): void {
+    gl.uniformMatrix3fv(loc, false, data);
+}
+
 export function uniform_matrix4fv(loc:  WebGLUniformLocation,
                                   data: Float32Array): void {
     gl.uniformMatrix4fv(loc, false, data);
 }
 
+export function uniform1i(loc: WebGLUniformLocation, x: number): void {
+    gl.uniform1i(loc, x);
+}
+
 export function enable_sys(cap: number): void {
     gl.enable(cap);
+}
+
+export function create_texture(): WebGLTexture {
+    const ret = gl.createTexture();
+    if (ret === null) {
+        throw new Error("Failed to create texture");
+    }
+
+    return ret;
+}
+
+export function active_texture_sys(texture_ix: number): void {
+    gl.activeTexture(texture_ix);
+}
+
+export function bind_texture_sys(target: number, texture: WebGLTexture): void {
+    gl.bindTexture(target, texture);
 }
 
 export function get_seed(): Uint32Array {
@@ -214,6 +240,65 @@ export function get_seed(): Uint32Array {
 
 export function now(): DOMHighResTimeStamp {
     return performance.now();
+}
+
+export function tex_image_2d_u8_sys(target:          number,
+                                    level:           number,
+                                    internal_format: number,
+                                    width:           number,
+                                    height:          number,
+                                    format:          number,
+                                    src_data:        Uint8Array): void {
+    gl.texImage2D(
+        target,
+        level,
+        internal_format,
+        width,
+        height,
+        0,
+        format,
+        gl.UNSIGNED_BYTE,
+        src_data,
+    );
+}
+
+export function tex_image_2d_u16_sys(target:          number,
+                                     level:           number,
+                                     internal_format: number,
+                                     width:           number,
+                                     height:          number,
+                                     format:          number,
+                                     src_data:        Uint16Array): void {
+    gl.texImage2D(
+        target,
+        level,
+        internal_format,
+        width,
+        height,
+        0,
+        format,
+        gl.UNSIGNED_SHORT,
+        src_data,
+    );
+}
+
+export function pixel_storei_sys(pname: number, param: number): void {
+    gl.pixelStorei(pname, param);
+}
+
+export function tex_parameteri_sys(target: number,
+                                   pname:  number,
+                                   param:  number): void {
+    //console.log("gl.texParameteri(", target, ",", pname, ",", param, ");");
+    gl.texParameteri(target, pname, param);
+}
+
+export function depth_mask(flag: boolean): void {
+    gl.depthMask(flag);
+}
+
+export function depth_func_sys(func: number): void {
+    gl.depthFunc(func);
 }
 
 webgl_test.then(bg => {
@@ -232,17 +317,17 @@ webgl_test.then(bg => {
 
         const data = new Uint8Array(e.data);
         switch (data[0]) {
-            case RecvOpcode.MAP_DATA:
-                // Feed the map data into the wasm code
-                if (bg.load_map(new Uint8Array(data.buffer, 1)) !== 0) {
-                    throw new Error("Could not load map");
-                }
+        case RecvOpcode.MAP_DATA:
+            // Feed the map data into the wasm code
+            if (bg.load_map(new Uint8Array(data.buffer, 1)) !== 0) {
+                throw new Error("Could not load map");
+            }
 
-                // Kick off the main loop
-                window.requestAnimationFrame(main_loop);
-                break;
-            default:
-                log(`Unexpected opcode received: ${data[0]}`);
+            // Kick off the main loop
+            window.requestAnimationFrame(main_loop);
+            break;
+        default:
+            log(`Unexpected opcode received: ${data[0]}`);
         }
     });
 

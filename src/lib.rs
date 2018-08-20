@@ -1,4 +1,4 @@
-#![feature(core_intrinsics, exact_chunks, use_extern_macros)]
+#![feature(core_intrinsics, exact_chunks)]
 //#![allow(unused)]
 
 mod controls;
@@ -16,7 +16,6 @@ pub use mains::*;
 pub use random::*;
 pub use webgl::*;
 
-extern crate bincode;
 extern crate byteorder;
 #[macro_use]
 extern crate lazy_static;
@@ -24,8 +23,7 @@ extern crate nalgebra as na;
 extern crate ncollide3d as nc;
 extern crate nphysics3d as np;
 extern crate pcg_rand;
+extern crate png;
 extern crate rand;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
 extern crate wasm_bindgen;
+extern crate webgl_test_common;
