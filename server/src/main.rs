@@ -1,3 +1,4 @@
+mod error;
 mod map;
 mod random;
 mod recv_opcode;
@@ -12,7 +13,8 @@ extern crate webgl_test_common;
 
 use actix::{Actor, StreamHandler};
 use actix_web::{fs, http, server, ws, App, HttpRequest};
-use std::io::{self, Cursor, Write};
+use error::Error;
+use std::io::{Cursor, Write};
 
 struct Ws;
 
@@ -30,7 +32,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for Ws {
                     recv_opcode::MAP_REQUEST => {
                         const MAP_RADIUS: usize = 24;
 
-                        let generated = map::generate_map(MAP_RADIUS);
+                        let generated = map::generate_map(MAP_RADIUS).unwrap();
                         let mut buf =
                             Vec::with_capacity(24 * MAP_RADIUS * MAP_RADIUS);
                         {
@@ -50,7 +52,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for Ws {
     }
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Error> {
     server::new(|| {
         App::new()
             .resource("/ws/", |r| r.f(|req| ws::start(req, Ws)))

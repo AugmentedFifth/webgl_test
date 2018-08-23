@@ -1,3 +1,4 @@
+use error::Error;
 use geometry;
 use mains;
 use map;
@@ -106,46 +107,71 @@ void main() {
 const SKYBOX_TEXTURE_INDEX: webgl::TextureIndex =
     webgl::TextureIndex::Texture0;
 
-pub fn init() {
+pub fn init() -> Result<(), Error> {
     let vertex_shader = webgl::create_shader(
         webgl::ShaderType::VertexShader,
         VERTEX_SHADER_SRC,
-    ).expect("Failed to create vertex shader");
+    ).ok_or_else(|| Error::Gl("Failed to create vertex shader".to_owned()))?;
     let fragment_shader = webgl::create_shader(
         webgl::ShaderType::FragmentShader,
         FRAGMENT_SHADER_SRC,
-    ).expect("Failed to create fragment shader");
+    ).ok_or_else(|| Error::Gl("Failed to create fragment shader".to_owned()))?;
 
     let program = webgl::create_program(&vertex_shader, &fragment_shader)
-        .expect("Failed to link GLSL program");
+        .ok_or_else(|| Error::Gl("Failed to link GLSL program".to_owned()))?;
 
-    let world_view_proj_uni_loc = webgl::get_uniform_location(
-        &program,
-        "u_worldViewProjection",
-    ).expect("There is no uniform with the name \"u_worldViewProjection\"");
+    let world_view_proj_uni_loc =
+        webgl::get_uniform_location(&program, "u_worldViewProjection")
+            .ok_or_else(|| {
+                Error::Gl(
+                    "There is no uniform with the name \
+                     \"u_worldViewProjection\""
+                        .to_owned(),
+                )
+            })?;
     let world_uni_loc = webgl::get_uniform_location(&program, "u_world")
-        .expect("There is no uniform with the name \"u_world\"");
+        .ok_or_else(|| {
+            Error::Gl(
+                "There is no uniform with the name \"u_world\"".to_owned(),
+            )
+        })?;
     let color_uni_loc = webgl::get_uniform_location(&program, "u_color")
-        .expect("There is no uniform with the name \"u_color\"");
-    let displacement_uni_loc =
-        webgl::get_uniform_location(&program, "u_displacement")
-            .expect("There is no uniform with the name \"u_displacement\"");
+        .ok_or_else(|| {
+            Error::Gl(
+                "There is no uniform with the name \"u_color\"".to_owned(),
+            )
+        })?;
+    let displacement_uni_loc = webgl::get_uniform_location(
+        &program,
+        "u_displacement",
+    ).ok_or_else(|| {
+        Error::Gl(
+            "There is no uniform with the name \"u_displacement\"".to_owned(),
+        )
+    })?;
     let reverse_light_dir_uni_loc =
         webgl::get_uniform_location(&program, "u_reverseLightDirection")
-            .expect(
-                "There is no uniform with the name \
-                 \"u_reverseLightDirection\"",
-            );
+            .ok_or_else(|| {
+                Error::Gl(
+                    "There is no uniform with the name \
+                     \"u_reverseLightDirection\""
+                        .to_owned(),
+                )
+            })?;
     ////////////////////////////////////////////////////////////////////////
 
     let position_attr_loc = webgl::get_attr_location(&program, "a_position");
     if position_attr_loc < 0 {
-        panic!("There is no attribute with the name \"a_position\"");
+        return Err(Error::Gl(
+            "There is no attribute with the name \"a_position\"".to_owned(),
+        ));
     }
     let position_attr_loc = position_attr_loc as u32;
     let normal_attr_loc = webgl::get_attr_location(&program, "a_normal");
     if normal_attr_loc < 0 {
-        panic!("There is no attribute with the name \"a_normal\"");
+        return Err(Error::Gl(
+            "There is no attribute with the name \"a_normal\"".to_owned(),
+        ));
     }
     let normal_attr_loc = normal_attr_loc as u32;
     ////////////////////////////////////////////////////////////////////////
@@ -209,27 +235,39 @@ pub fn init() {
     let vertex_shader = webgl::create_shader(
         webgl::ShaderType::VertexShader,
         SKYBOX_VERTEX_SHADER_SRC,
-    ).expect("Failed to create vertex shader");
+    ).ok_or_else(|| Error::Gl("Failed to create vertex shader".to_owned()))?;
     let fragment_shader = webgl::create_shader(
         webgl::ShaderType::FragmentShader,
         SKYBOX_FRAGMENT_SHADER_SRC,
-    ).expect("Failed to create fragment shader");
+    ).ok_or_else(|| Error::Gl("Failed to create fragment shader".to_owned()))?;
 
     let program = webgl::create_program(&vertex_shader, &fragment_shader)
-        .expect("Failed to link GLSL program");
+        .ok_or_else(|| Error::Gl("Failed to link GLSL program".to_owned()))?;
     webgl::use_program(&program);
 
     let proj_uni_loc = webgl::get_uniform_location(&program, "u_projection")
-        .expect("There is no uniform with the name \"u_projection\"");
+        .ok_or_else(|| {
+        Error::Gl(
+            "There is no uniform with the name \"u_projection\"".to_owned(),
+        )
+    })?;
     let view_uni_loc = webgl::get_uniform_location(&program, "u_view")
-        .expect("There is no uniform with the name \"u_view\"");
+        .ok_or_else(|| {
+            Error::Gl(
+                "There is no uniform with the name \"u_view\"".to_owned(),
+            )
+        })?;
     let texture_uni_loc = webgl::get_uniform_location(&program, "u_texture")
-        .expect("There is no uniform with the name \"u_texture\"");
+        .ok_or_else(|| {
+        Error::Gl("There is no uniform with the name \"u_texture\"".to_owned())
+    })?;
     ////////////////////////////////////////////////////////////////////////
 
     let position_attr_loc = webgl::get_attr_location(&program, "a_position");
     if position_attr_loc < 0 {
-        panic!("There is no attribute with the name \"a_position\"");
+        return Err(Error::Gl(
+            "There is no attribute with the name \"a_position\"".to_owned(),
+        ));
     }
     let position_attr_loc = position_attr_loc as u32;
     ////////////////////////////////////////////////////////////////////////
@@ -356,14 +394,16 @@ pub fn init() {
     webgl::enable(webgl::Capability::CullFace);
     webgl::enable(webgl::Capability::DepthTest);
     //////////////////////////////////////////////////
+
+    Ok(())
 }
 
-pub fn render() {
+pub fn render() -> Result<(), Error> {
     // Retrieve GL state
     let mut gl_state_lock = GL_STATE.lock().unwrap();
-    let gl_state = gl_state_lock.as_mut().unwrap_or_else(|| {
-        panic!("Did not call `init` before callng `render`")
-    });
+    let gl_state = gl_state_lock.as_mut().ok_or_else(|| {
+        Error::Logic("Did not call `init` before callng `render`".to_owned())
+    })?;
 
     // Retrieve physical state
     let world = physics::WORLD.lock().unwrap();
@@ -519,4 +559,6 @@ pub fn render() {
 
     webgl::draw_arrays(webgl::RenderingPrimitive::Triangles, 0, 3 * 2 * 6);
     webgl::depth_func(webgl::DepthFunc::Less);
+
+    Ok(())
 }

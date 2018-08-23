@@ -1,8 +1,11 @@
+use error::Error;
 use geometry::{self, CubeCoord, CubeRing};
+use jpeg;
 use png;
 use std::{iter::Iterator, ops::Index, sync::Mutex};
 use webgl;
 use webgl_test_common::{
+    CompressedImgData,
     Hex,
     LightSource,
     MapData,
@@ -67,7 +70,7 @@ impl Map {
         }
     }
 
-    pub fn from_map_data(md: &MapData) -> Self {
+    pub fn from_map_data(md: &MapData) -> Result<Self, Error> {
         let mut hexes = Vec::with_capacity(md.get_hexes().len());
         for (row_n, row) in md.get_hexes().into_iter().enumerate() {
             let mut new_row = Vec::with_capacity(row.len());
@@ -84,12 +87,12 @@ impl Map {
             hexes.push(new_row);
         }
 
-        Self {
+        Ok(Self {
             radius: md.get_radius(),
             hexes,
             light_sources: md.light_sources.clone(),
-            skybox: Skybox::from_compressed(&md.skybox),
-        }
+            skybox: Skybox::from_compressed(&md.skybox)?,
+        })
     }
 
     #[inline]
@@ -184,36 +187,77 @@ impl Skybox {
         }
     }
 
-    pub fn from_compressed(sc: &SkyboxCompressed) -> Self {
+    pub fn from_compressed(sc: &SkyboxCompressed) -> Result<Self, Error> {
         let mut skybox = Skybox::default();
 
         for (i, p) in sc.images.iter().enumerate() {
-            let decoder = png::Decoder::new(p.data.as_slice());
-            let (info, mut reader) = decoder.read_info().unwrap();
-            let mut buf = Vec::with_capacity(info.buffer_size());
-            unsafe {
-                buf.set_len(info.buffer_size());
-            }
-            reader.next_frame(&mut buf).unwrap();
+            match p {
+                CompressedImgData::NoData =>
+                    return Err(Error::Img(
+                        "Missing image data for skybox".to_owned(),
+                    )),
+                CompressedImgData::Png(data) => {
+                    let decoder = png::Decoder::new(data.as_slice());
+                    let (info, mut reader) = decoder.read_info()?;
+                    let mut buf = Vec::with_capacity(info.buffer_size());
+                    unsafe {
+                        buf.set_len(info.buffer_size());
+                    }
+                    reader.next_frame(&mut buf)?;
 
-            skybox.images[i] = ImgData::new(
-                buf,
-                info.width,
-                info.height,
-                match info.color_type {
-                    png::ColorType::RGB => false,
-                    png::ColorType::RGBA => true,
-                    _ => panic!(),
+                    skybox.images[i] = ImgData::new(
+                        buf,
+                        info.width,
+                        info.height,
+                        match info.color_type {
+                            png::ColorType::RGB => false,
+                            png::ColorType::RGBA => true,
+                            _ =>
+                                return Err(Error::Img(
+                                    "Color type of skybox image is not RGB(A)"
+                                        .to_owned(),
+                                )),
+                        },
+                        match info.bit_depth {
+                            png::BitDepth::Eight => true,
+                            png::BitDepth::Sixteen => false,
+                            _ =>
+                                return Err(Error::Img(
+                                    "Bit depth of skybox image is not 8 nor \
+                                     16".to_owned(),
+                                )),
+                        },
+                    );
                 },
-                match info.bit_depth {
-                    png::BitDepth::Eight => true,
-                    png::BitDepth::Sixteen => false,
-                    _ => panic!(),
+                CompressedImgData::Jpeg(data) => {
+                    let mut decoder = jpeg::Decoder::new(data.as_slice());
+                    let buf = decoder.decode()?;
+                    let info = decoder.info().ok_or_else(|| {
+                        Error::Jpeg(jpeg::Error::Format(
+                            "Could not read JPEG info of skybox image"
+                                .to_owned(),
+                        ))
+                    })?;
+                    if info.pixel_format != jpeg::PixelFormat::RGB24 {
+                        return Err(Error::Img(
+                            "JPEG data for skybox image is not in RGB888 \
+                             format"
+                                .to_owned(),
+                        ));
+                    }
+
+                    skybox.images[i] = ImgData::new(
+                        buf,
+                        u32::from(info.width),
+                        u32::from(info.height),
+                        false,
+                        true,
+                    );
                 },
-            );
+            }
         }
 
-        skybox
+        Ok(skybox)
     }
 }
 

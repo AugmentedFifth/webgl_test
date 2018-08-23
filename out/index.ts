@@ -319,7 +319,7 @@ webgl_test.then(bg => {
         switch (data[0]) {
         case RecvOpcode.MAP_DATA:
             // Feed the map data into the wasm code
-            if (bg.load_map(new Uint8Array(data.buffer, 1)) !== 0) {
+            if (bg.load_map_bg(new Uint8Array(data.buffer, 1)) !== 0) {
                 throw new Error("Could not load map");
             }
 
@@ -345,7 +345,9 @@ webgl_test.then(bg => {
     gl = gl_ctx;
 
     // Initialize state within Rust (wasm) code
-    bg.init();
+    if (bg.init_bg() !== 0) {
+        throw new Error("`init_bg` failed");
+    }
 
     // Set up DOM event handling apparatus
     const event_queue = new Event.EventQueue();
@@ -395,7 +397,9 @@ webgl_test.then(bg => {
     // Main loop
     function main_loop(t: DOMHighResTimeStamp): void {
         window.requestAnimationFrame(main_loop);
-        bg.main_loop(t, event_queue);
+        if (bg.main_loop_bg(t, event_queue) !== 0) {
+            throw new Error("`main_loop_bg` failed");
+        }
         event_queue.clear();
     }
 })

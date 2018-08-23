@@ -1,5 +1,6 @@
 use byteorder::{NativeEndian, ReadBytesExt};
 use controls::{self, Key};
+use error::{log_and_return, Error};
 use js::{self, EventType};
 use map;
 use na;
@@ -34,28 +35,43 @@ impl Default for PlayerState {
 }
 
 #[wasm_bindgen]
-pub fn init() {
-    render::init();
+pub fn init_bg() -> i32 {
+    log_and_return(init())
+}
+
+#[inline]
+fn init() -> Result<(), Error> {
+    render::init()
 }
 
 #[wasm_bindgen]
-pub fn load_map(map_data: &[u8]) -> i32 {
-    if let Some(map_data) = MapData::from_raw_data(map_data) {
-        let mut map_state = map::MAP.lock().unwrap();
-        *map_state = map::Map::from_map_data(&map_data);
+pub fn load_map_bg(map_data: &[u8]) -> i32 {
+    log_and_return(load_map(map_data))
+}
 
-        let radius = map_state.get_radius();
-        let (_, (x, y)) = map_state.get_hexes()[radius][radius];
-        physics::init_world(&map_state, &na::Point3::new(x, 4.0, -y));
+#[inline]
+fn load_map(map_data: &[u8]) -> Result<(), Error> {
+    let map_data = MapData::from_raw_data(map_data)?;
 
-        0
-    } else {
-        1
-    }
+    let mut map_state = map::MAP.lock().unwrap();
+    *map_state = map::Map::from_map_data(&map_data)?;
+
+    let radius = map_state.get_radius();
+    let (_, (x, y)) = map_state.get_hexes()[radius][radius];
+    physics::init_world(&map_state, &na::Point3::new(x, 4.0, -y));
+
+    Ok(())
 }
 
 #[wasm_bindgen]
-pub fn main_loop(_time_stamp: f64, event_queue: &js::EventQueue) {
+pub fn main_loop_bg(time_stamp: f64, event_queue: &js::EventQueue) -> i32 {
+    log_and_return(main_loop(time_stamp, event_queue))
+}
+
+fn main_loop(
+    _time_stamp: f64,
+    event_queue: &js::EventQueue,
+) -> Result<(), Error> {
     // Handle events sent from JS "event queue"
     for i in 0..event_queue.len() {
         let event_data = event_queue.get(i);
@@ -74,11 +90,8 @@ pub fn main_loop(_time_stamp: f64, event_queue: &js::EventQueue) {
                 EventType::MouseMove => {
                     let payload = event_data.payload();
                     controls::handle_mouse_movement(
-                        payload.as_ref().read_f32::<NativeEndian>().unwrap(),
-                        payload[4..]
-                            .as_ref()
-                            .read_f32::<NativeEndian>()
-                            .unwrap(),
+                        payload.as_ref().read_f32::<NativeEndian>()?,
+                        payload[4..].as_ref().read_f32::<NativeEndian>()?,
                     );
                 },
             }
@@ -104,5 +117,7 @@ pub fn main_loop(_time_stamp: f64, event_queue: &js::EventQueue) {
     physics::step();
 
     // Render to screen
-    render::render();
+    render::render()?;
+
+    Ok(())
 }

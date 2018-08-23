@@ -4,7 +4,9 @@ version = "0.1.0"
 authors = ["z"]
 
 [dependencies]
+bincode = "1.0.1"
 byteorder = { version = "1.2.4", default-features = false }
+jpeg-decoder = { version = "0.1.15", default-features = false }
 lazy_static = "1.1.0"
 nalgebra = "0.16.0"
 ncollide3d = "0.17.1"

@@ -9,8 +9,8 @@ actix-web = "0.7.3"
 bincode = "1.0.1"
 pcg_rand = "0.9.1"
 rand = "0.5.5"
-serde = "1.0.71"
-serde_derive = "1.0.71"
+serde = "1.0.72"
+serde_derive = "1.0.72"
 webgl_test_common = { path = "../webgl_test_common" }
 
 [profile.release]

@@ -27,12 +27,14 @@ pub enum LightSource {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct SkyboxCompressed {
-    pub images: [PngData; 6],
+    pub images: [CompressedImgData; 6],
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-pub struct PngData {
-    pub data: Vec<u8>,
+pub enum CompressedImgData {
+    NoData,
+    Png(Vec<u8>),
+    Jpeg(Vec<u8>),
 }
 
 impl MapData {
@@ -52,8 +54,8 @@ impl MapData {
     }
 
     #[inline]
-    pub fn from_raw_data(data: &[u8]) -> Option<Self> {
-        bincode::deserialize(data).ok()
+    pub fn from_raw_data(data: &[u8]) -> bincode::Result<Self> {
+        bincode::deserialize(data)
     }
 
     #[inline]
@@ -114,7 +116,7 @@ impl RgbByteColor {
 
 impl SkyboxCompressed {
     #[inline]
-    pub fn new(images: [PngData; 6]) -> Self {
+    pub fn new(images: [CompressedImgData; 6]) -> Self {
         Self { images }
     }
 }
@@ -124,27 +126,20 @@ impl Default for SkyboxCompressed {
     fn default() -> Self {
         Self {
             images: [
-                PngData::default(),
-                PngData::default(),
-                PngData::default(),
-                PngData::default(),
-                PngData::default(),
-                PngData::default(),
+                CompressedImgData::default(),
+                CompressedImgData::default(),
+                CompressedImgData::default(),
+                CompressedImgData::default(),
+                CompressedImgData::default(),
+                CompressedImgData::default(),
             ],
         }
     }
 }
 
-impl PngData {
-    #[inline]
-    pub fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-}
-
-impl Default for PngData {
+impl Default for CompressedImgData {
     #[inline]
     fn default() -> Self {
-        Self { data: Vec::new() }
+        CompressedImgData::NoData
     }
 }

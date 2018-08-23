@@ -1,9 +1,10 @@
+use error::Error;
 use random;
 use std::{fs, io::Read};
 use webgl_test_common::{
+    CompressedImgData,
     Hex,
     MapData,
-    PngData,
     RgbByteColor,
     SkyboxCompressed,
 };
@@ -20,6 +21,7 @@ type Axial = (isize, isize);
 
 const STAY_PROB: f32 = 0.75;
 const STEP_SIZE: f32 = 0.5;
+const USE_PNG: bool = false;
 
 #[inline]
 fn random_byte_color() -> RgbByteColor {
@@ -113,7 +115,7 @@ fn axial_to_indices(axial: Axial, radius: usize) -> (usize, usize) {
     )
 }
 
-pub fn generate_map(radius: usize) -> MapData {
+pub fn generate_map(radius: usize) -> Result<MapData, Error> {
     let (a, b) = (radius + 1, 2 * radius + 1);
     let mut hexes = Vec::with_capacity(b);
     let mut hex_parents = Vec::with_capacity(b);
@@ -164,14 +166,15 @@ pub fn generate_map(radius: usize) -> MapData {
                     hex_parents[i][j]
                 };
 
+                let (parent0, _) = parent0.unwrap();
                 if let Some(p1) = parent1 {
                     if random::gen() {
-                        hex_index(parent0.unwrap().0)
+                        hex_index(parent0)
                     } else {
                         hex_index(p1)
                     }
                 } else {
-                    hex_index(parent0.unwrap().0)
+                    hex_index(parent0)
                 }
             };
 
@@ -202,17 +205,20 @@ pub fn generate_map(radius: usize) -> MapData {
     let mut skybox = SkyboxCompressed::default();
     for i in 0..6 {
         skybox_path.push(char::from('0' as u8 + i));
-        skybox_path.push_str(".png");
-        let mut f = fs::File::open(&skybox_path).unwrap();
+        skybox_path.push_str(if USE_PNG { ".png" } else { ".jpg" });
+        let mut f = fs::File::open(&skybox_path)?;
         skybox_path.truncate("./img/skybox".len());
 
-        let mut png_buf =
-            Vec::with_capacity(f.metadata().unwrap().len() as usize);
-        f.read_to_end(&mut png_buf).unwrap();
-        f.sync_all().unwrap();
+        let mut buf = Vec::with_capacity(f.metadata()?.len() as usize);
+        f.read_to_end(&mut buf)?;
+        f.sync_all()?;
 
-        skybox.images[i as usize] = PngData::new(png_buf);
+        skybox.images[i as usize] = if USE_PNG {
+            CompressedImgData::Png(buf)
+        } else {
+            CompressedImgData::Jpeg(buf)
+        };
     }
 
-    MapData::new(radius, hexes, Vec::new(), skybox)
+    Ok(MapData::new(radius, hexes, Vec::new(), skybox))
 }

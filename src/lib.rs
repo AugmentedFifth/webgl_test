@@ -2,6 +2,7 @@
 //#![allow(unused)]
 
 mod controls;
+mod error;
 mod geometry;
 mod js;
 mod mains;
@@ -16,7 +17,9 @@ pub use mains::*;
 pub use random::*;
 pub use webgl::*;
 
+extern crate bincode;
 extern crate byteorder;
+extern crate jpeg_decoder as jpeg;
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra as na;
