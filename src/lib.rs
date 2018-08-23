@@ -1,5 +1,5 @@
 #![feature(core_intrinsics, exact_chunks)]
-//#![allow(unused)]
+#![allow(unused)]
 
 mod controls;
 mod error;

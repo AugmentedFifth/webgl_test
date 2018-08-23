@@ -410,8 +410,8 @@ pub enum DepthFunc {
 
 impl TextureIndex {
     #[inline]
-    pub fn as_index(&self) -> u32 {
-        *self as u32 - TextureIndex::Texture0 as u32
+    pub fn as_index(self) -> u32 {
+        self as u32 - TextureIndex::Texture0 as u32
     }
 }
 

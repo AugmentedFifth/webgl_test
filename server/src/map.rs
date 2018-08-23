@@ -204,7 +204,7 @@ pub fn generate_map(radius: usize) -> Result<MapData, Error> {
     let mut skybox_path = "./img/skybox".to_owned();
     let mut skybox = SkyboxCompressed::default();
     for i in 0..6 {
-        skybox_path.push(char::from('0' as u8 + i));
+        skybox_path.push(char::from(b'0' + i));
         skybox_path.push_str(if USE_PNG { ".png" } else { ".jpg" });
         let mut f = fs::File::open(&skybox_path)?;
         skybox_path.truncate("./img/skybox".len());

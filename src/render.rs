@@ -481,7 +481,7 @@ pub fn render() -> Result<(), Error> {
         .chain(map_state.iter_radial(player_cube_coord))
     {
         // Set the color
-        let color = map::RgbColor::from_byte_color(hex.color.clone());
+        let color = map::RgbColor::from_byte_color(hex.color);
         webgl::uniform3f(
             &gl_state.terrain.color_uni_loc,
             color.r(),

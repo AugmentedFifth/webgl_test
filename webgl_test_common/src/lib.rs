@@ -89,17 +89,17 @@ impl Hex {
 
 impl RgbByteColor {
     #[inline]
-    pub fn r(&self) -> u8 {
+    pub fn r(self) -> u8 {
         self.0[0]
     }
 
     #[inline]
-    pub fn g(&self) -> u8 {
+    pub fn g(self) -> u8 {
         self.0[1]
     }
 
     #[inline]
-    pub fn b(&self) -> u8 {
+    pub fn b(self) -> u8 {
         self.0[2]
     }
 
@@ -109,7 +109,7 @@ impl RgbByteColor {
     }
 
     #[inline]
-    pub fn rgba(&self) -> [u8; 4] {
+    pub fn rgba(self) -> [u8; 4] {
         [self.0[0], self.0[1], self.0[2], 0xFF]
     }
 }
